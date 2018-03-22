@@ -16,15 +16,10 @@ let vp = { x: 0, y: 0 }
 let scale = 1
 let flood = false
 
-function prefetch (sx, sy, w, h) {
+prefetch()
+function prefetch () {
   let rooms = []
-  for (let x = sx; x < sx + w; x++) {
-    for (let y = sy; y < sy + h; y++) {
-      let room = utils.roomNameFromXY(x, y)
-      rooms.push(room)
-    }
-  }
-  getAllTerrain(rooms, true)
+  getAllTerrain(true)
     .then(ts => {
       ts.map(t => {
         console.log(t)
@@ -135,6 +130,8 @@ function render () {
     let { x, y } = mp
     x -= vp.x
     y -= vp.y
+    if (x < 0) x -= 50 * scale
+    if (y < 0) y -= 50 * scale
     let rx = x - x % (50 * scale)
     let ry = y - y % (50 * scale)
     cell = { x: rx / (50 * scale), y: ry / (50 * scale) }
@@ -168,7 +165,14 @@ function renderRoom (ctx, room) {
   let ry = room.y * 50 * scale
   ctx.putImageData(img, vp.x + rx, vp.y + ry)
   if (flood) return
-  if (showWalls.checked) {
+  if (room.status !== 'normal') {
+    ctx.save()
+    ctx.beginPath()
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'
+    ctx.fillRect(rx, ry, 50 * scale, 50 * scale)
+    ctx.restore()
+  }
+  if (showWalls.checked && room.exits) {
     ctx.save()
     ctx.beginPath()
     let x2 = rx + (50 * scale)
@@ -305,14 +309,15 @@ for (let i = 0; i < pool.count; i++) {
 
 function save (active) {
   if (!prompt('Are you sure you want to save?')) return
-  terrain.forEach(r => r.status = (active ? 'normal' : 'out of borders'))
+  terrain.forEach(r => r.status = r.status || (active ? 'normal' : 'out of borders'))
   let json = JSON.stringify(terrain.filter(r => !r.remote))
   fetch(`${server}/api/maptool/set`, {
     method: 'POST',
     body: json,
     headers: {
       'content-type': 'application/json'
-    }
+    },
+    credentials: 'same-origin'
   })
 }
 
@@ -381,14 +386,14 @@ function makeSolidRoom (x, y) {
   else window.terrain.push(obj)
 }
 
-function generateSector (room) { // doesn't work atm
+async function generateSector (room) {
   let p1 = []
   let p2 = []
   let [x, y] = utils.roomNameToXY(room)
   let sx = x - (x % 10)
   let sy = y - (y % 10)
   let start = { x: sx, y: sy }
-  let end = { x: sx + 10, y: sy + 10 }
+  let end = { x: sx + 11, y: sy + 11 }
   for (let x = start.x; x < end.x; x++) {
     for (let y = start.y; y < end.y; y++) {
       let room = utils.roomNameFromXY(x, y)
@@ -402,16 +407,8 @@ function generateSector (room) { // doesn't work atm
     }
   }
   console.log(sx, sy, start, end, p1, p2)
-  return Promise.resolve()
-    .then(() => Promise.all(p1.map(room => {
-      console.log(room)
-      return gen(room)
-    })))
-    .then(() => Promise.all(p2.map(room => {
-      console.log(room)
-      return gen(room)
-    })))
-    .then(() => {})
+  await Promise.all(p1.map(room => gen(room)))
+  await Promise.all(p2.map(room => gen(room)))
 }
 
 function createGrid () {

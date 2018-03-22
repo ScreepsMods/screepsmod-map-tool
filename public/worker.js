@@ -1,5 +1,5 @@
 importScripts('index.js')
-importScripts('bower_components/lodash/lodash.min.js')
+importScripts('lodash.min.js')
 importScripts('q.js')
 self.q = self.Q
 
@@ -10,6 +10,8 @@ addEventListener('message', msg => {
     let [x, y] = utils.roomNameToXY(msg.data.room)
     let rx = x % 10
     let ry = y % 10
+    if (rx < 0) rx++
+    if (ry < 0) ry++
     let hall = !rx || !ry
     let center = rx == 5 && ry == 5
     let sk = !center && rx >= 4 && rx <= 6 && ry >= 4 && ry <= 6

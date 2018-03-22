@@ -3,8 +3,8 @@
 	<head>
 		<meta charset="UTF-8">
 		<title>MapGen</title>
-		<script src="bower_components/lodash/lodash.min.js" async></script>
-		<script src="bower_components/async/dist/async.min.js" async></script>
+		<script src="lodash.min.js" async></script>
+		<script src="async.min.js" async></script>
 		<script src="q.js" async></script>
 		<script src="index.js" defer async></script>
 		<script src="renderer.js" defer async></script>
@@ -14,41 +14,6 @@
 	<body>
 		<canvas id="canvas"></canvas>
 		<div class="controlpanel">
-			<table>
-				<tr>
-					<td>
-						<button onclick="prefetch(0,0,11,11)">Fetch Sector (E5S5)</button>
-					</td>
-					<td>
-						<button onclick="prefetch(10,0,11,11)">Fetch Sector (E15S5)</button>
-					</td>
-					<td>
-						<button onclick="prefetch(20,0,11,11)">Fetch Sector (E25S5)</button>
-					</td>
-				</tr>
-				<tr>
-					<td>
-						<button onclick="prefetch(0,10,11,11)">Fetch Sector (E5S15)</button>
-					</td>
-					<td>
-						<button onclick="prefetch(10,10,11,11)">Fetch Sector (E15S15)</button>
-					</td>
-					<td>
-						<button onclick="prefetch(20,10,11,11)">Fetch Sector (E25S15)</button>
-					</td>	
-				</tr>
-				<tr>
-					<td>
-						<button onclick="prefetch(0,20,11,11)">Fetch Sector (E5S25)</button>
-					</td>
-					<td>
-						<button onclick="prefetch(10,20,11,11)">Fetch Sector (E15S25)</button>
-					</td>
-					<td>
-						<button onclick="prefetch(20,20,11,11)">Fetch Sector (E25S25)</button>
-					</td>	
-				</tr>
-			</table>
 			<button onclick="scale=1">Zoom Out</button>
 			<button onclick="scale=3">Zoom In</button>
 			<button onclick="save()">Save</button>

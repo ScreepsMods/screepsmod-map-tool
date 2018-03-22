@@ -1,32 +1,18 @@
 self.terrainCache = {}
 
-const server = `https://server1.screepspl.us`
+const server = ``
 const wallChance = 0.25
 function getTerrain (room, remote) {
-  if (typeof self.terrainCache[room] !== 'undefined') return Promise.resolve(self.terrainCache[room])
-  if (remote)
-    // return fetch(`https://server1.screepspl.us/api/game/room-terrain?room=${room}`)
-    {
-    return fetch(`${server}/api/maptool/room?room=${room}`)
-      .then(res => res.json())
-      .then(res => {
-        self.terrainCache[room] = res
-        return res
-      })
-  } else { return null }
+  return self.terrainCache[room] || null
 }
-function getAllTerrain (rooms, remote) {
-  if (remote)
-    // return fetch(`${server}/api/game/room-terrain?room=${room}`)
-    {
-    return fetch(`${server}/api/maptool/rooms?rooms=${rooms.join(',')}`)
-      .then(res => res.json())
-      .then(res => {
-        res = res.filter(r => r)
-        res.forEach(r => { self.terrainCache[r.room] = r })
-        return res
-      })
-  } else { return null }
+
+async function getAllTerrain () {
+  const res = await fetch(`${server}/api/maptool/rooms`, { credentials: 'same-origin' })
+  const { rooms } = await res.json()
+  rooms.forEach(r => {
+    self.terrainCache[r.room] = r
+  })
+  return rooms
 }
 
 const C = {
@@ -56,10 +42,10 @@ const common = {
       for (var x = 0; x < 50; x++) {
         var objects = _.filter(terrain, {x, y}),
           code = 0
-        if (_.any(objects, {type: 'wall'})) {
+        if (_.some(objects, {type: 'wall'})) {
           code = code | 1
         }
-        if (_.any(objects, {type: 'swamp'})) {
+        if (_.some(objects, {type: 'swamp'})) {
           code = code | 2
         }
         result = result + code
@@ -437,26 +423,26 @@ function generateRoom (roomName, opts) {
       }
       for (var y = 0; y < 50; y++) {
         for (var x = 0; x < 50; x++) {
-          if (y == 0 && _.isArray(exits.top) && _.contains(exits.top, x)) {
+          if (y == 0 && _.isArray(exits.top) && _.includes(exits.top, x)) {
             terrain[y][x].forceOpen = true
             terrain[y + 1][x].forceOpen = true
             terrain[y][x].exit = true
             continue
           }
-          if (y == 49 && _.isArray(exits.bottom) && _.contains(exits.bottom, x)) {
+          if (y == 49 && _.isArray(exits.bottom) && _.includes(exits.bottom, x)) {
             terrain[y][x].forceOpen = true
             terrain[y - 1][x].forceOpen = true
             terrain[y][x].exit = true
             continue
           }
-          if (x == 0 && _.isArray(exits.left) && _.contains(exits.left, y)) {
+          if (x == 0 && _.isArray(exits.left) && _.includes(exits.left, y)) {
             terrain[y][x].forceOpen = true
             terrain[y][x + 1].forceOpen = true
             terrain[y][x].exit = true
             continue
           }
 
-          if (x == 49 && _.isArray(exits.right) && _.contains(exits.right, y)) {
+          if (x == 49 && _.isArray(exits.right) && _.includes(exits.right, y)) {
             terrain[y][x].forceOpen = true
             terrain[y][x - 1].forceOpen = true
             terrain[y][x].exit = true
@@ -690,7 +676,7 @@ function generateRoom (roomName, opts) {
             }
           }
         }
-        hasObjects = _.any(objects, i => (i.type == 'source' || i.type == 'controller') && Math.abs(i.x - mx) < 5 && Math.abs(i.y - my) < 5)
+        hasObjects = _.some(objects, i => (i.type == 'source' || i.type == 'controller') && Math.abs(i.x - mx) < 5 && Math.abs(i.y - my) < 5)
       }
       while (!isWall || !hasSpot || hasObjects)
 
