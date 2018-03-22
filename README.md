@@ -2,7 +2,7 @@
 
 # Usage: 
 
-URL: http://<ip>:21025/maptool/ 
+URL: http://yourServerIP:21025/maptool/ 
 
 The default username is admin,
 password is auto-generated at each server launch if not set in `.screepsrc`
