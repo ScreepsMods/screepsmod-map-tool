@@ -361,18 +361,42 @@ function makeNovice () {
   })
 }
 
-function generateSolidWall () {
-  let start = { x: 0, y: 0 }
-  let end = mapSize
+function findBounds () {
+  const solidTerrain = '1'.repeat(2500)
+  let start = { x: 100, y: 100 }
+  let end = { x: -100, y: -100 }
+  terrain.forEach(r => {
+    if (r.terrain === solidTerrain) return // Skip solid rooms
+    start.x = Math.min(start.x, r.x)
+    start.y = Math.min(start.y, r.y)
+    end.x = Math.max(end.x, r.x)
+    end.y = Math.max(end.y, r.y)
+  })
+  return { start, end }
+}
 
+function generateSolidWall () {
+  let { start, end } = findBounds ()
   for (let x = start.x - 1; x <= end.x + 1; x++) {
-    makeSolidRoom(x, start.y - 1)
-    makeSolidRoom(x, end.y + 1)
+    for (let y = start.y - 1; y <= end.y + 1; y++) {
+      let room = terrain.find(r => r.x === x && r.y === y)
+      if (!room) {
+        makeSolidRoom(x, y)
+      }
+    }
   }
-  for (let y = start.y; y <= end.y; y++) {
-    makeSolidRoom(start.x - 1, y)
-    makeSolidRoom(end.x + 1, y)
-  }
+  
+  // let start = { x: 0, y: 0 }
+  // let end = mapSize
+
+  // for (let x = start.x - 1; x <= end.x + 1; x++) {
+  //   makeSolidRoom(x, start.y - 1)
+  //   makeSolidRoom(x, end.y + 1)
+  // }
+  // for (let y = start.y; y <= end.y; y++) {
+  //   makeSolidRoom(start.x - 1, y)
+  //   makeSolidRoom(end.x + 1, y)
+  // }
 }
 
 function makeSolidRoom (x, y) {
@@ -390,8 +414,8 @@ async function generateSector (room) {
   let p1 = []
   let p2 = []
   let [x, y] = utils.roomNameToXY(room)
-  let sx = x - (x % 10)
-  let sy = y - (y % 10)
+  let sx = x - Math.abs(x % 10)
+  let sy = y - Math.abs(y % 10)
   let start = { x: sx, y: sy }
   let end = { x: sx + 11, y: sy + 11 }
   for (let x = start.x; x < end.x; x++) {
