@@ -7,8 +7,12 @@ URL: http://yourServerIP:21025/maptool/
 The default username is admin,
 password is auto-generated at each server launch if not set in `.screepsrc`
 
-Right click to remove a room
 Left click to generate a room
+Right click to remove a room
+
+Ctrl+Left Click to generate a sector
+Ctrl+Right Click to remove a sector (Fills with solid rooms)
+
 Middle clicking will flood fill from the cursor's position, 
 this is useful to find isolated rooms
 
@@ -22,10 +26,8 @@ Room types/features are automatic based on room position. (IE: bus, sk, controll
 
 In devtools, you can run `generateSector('E5S5')` to generate a sector around `E5S5`
 
-Generate walls is currently hardcoded for a 2 sector layout, 
-I hope to improve this in the future
-
-Don't leave any room open to the 'void', doing so _will_ cause pathfinding errors
+Generate walls will generate solid rooms surrounding the generated ones, this prevents pathfinding that result from exits leading to the 'void'
+On that note, don't leave any room open to the 'void', doing so _will_ cause pathfinding errors
 
 # Config
 

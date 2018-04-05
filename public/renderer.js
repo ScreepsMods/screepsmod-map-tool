@@ -79,18 +79,29 @@ canvas.addEventListener('mouseup', e => {
   let room = utils.roomNameFromXY(cell.x, cell.y)
   let btns = ['left', 'middle', 'right']
   let btn = btns[e.button] || 'right'
+  let { ctrlKey, shiftKey, altKey, metaKey } = e
   let { drag } = mb[btn]
   mb[btn] = {}
   if (drag) return
-  if (btn == 'left') { gen(room) }
+  if (btn == 'left') {
+    if(ctrlKey) {
+      generateSector(room)
+    } else {
+      gen(room)
+    }
+  }
   if (btn == 'middle') {
     flood = flood ? false : { x: e.clientX, y: e.clientY }
     console.log('flood', flood)
   }
   if (btn == 'right') {
-    terrainCache[room] = null
-    let ind = terrain.findIndex(r => r.room == room)
-    if (~ind) terrain.splice(ind, 1)
+    if (ctrlKey) {
+      deleteSector(room)
+    } else {
+      terrainCache[room] = null
+      let ind = terrain.findIndex(r => r.room == room)
+      if (~ind) terrain.splice(ind, 1)
+    }
   }
   e.preventDefault()
   return true
@@ -140,18 +151,28 @@ function render () {
     ctx.rect(rx, ry, (50 * scale), (50 * scale))
     ctx.strokeStyle = 'red'
     ctx.stroke()
+
+    let { start, end } = getSectorBounds(cell.room)
+    let s = 50 * scale
+    ctx.beginPath()
+    let w = Math.abs(end.x - start.x)
+    let h = Math.abs(end.y - start.y)
+    ctx.rect(start.x * s, start.y * s, w * s, h * s)
+    ctx.strokeStyle = 'yellow'
+    ctx.stroke()
   }
   ctx.restore()
   {
     ctx.save()
     ctx.translate(mp.x, mp.y)
     ctx.beginPath()
-    ctx.rect(0, 0, 75, 30)
+    ctx.rect(0, 0, 75, 60)
     ctx.fillStyle = '#333333'
     ctx.fill()
     ctx.font = '20px Roboto'
     ctx.fillStyle = 'white'
     ctx.fillText(cell.room, 5, 25)
+    ctx.fillText(`(${cell.x},${cell.y})`, 5, 45)
     let room = terrain.find(t => t.room == cell.room)
     ctx.restore()
   }
@@ -410,16 +431,23 @@ function makeSolidRoom (x, y) {
   else window.terrain.push(obj)
 }
 
+function getSectorBounds(room) {
+  let [x, y] = utils.roomNameToXY(room)
+  let sx = x - (x % 10) + 1
+  let sy = y - (y % 10) + 1
+  if(x < 0) sx -= 11
+  if(y < 0) sy -= 11
+  let start = { x: sx, y: sy }
+  let end = { x: sx + 9, y: sy + 9 }
+  return { start, end }
+}
+
 async function generateSector (room) {
   let p1 = []
   let p2 = []
-  let [x, y] = utils.roomNameToXY(room)
-  let sx = x - Math.abs(x % 10)
-  let sy = y - Math.abs(y % 10)
-  let start = { x: sx, y: sy }
-  let end = { x: sx + 11, y: sy + 11 }
-  for (let x = start.x; x < end.x; x++) {
-    for (let y = start.y; y < end.y; y++) {
+  let { start, end } = getSectorBounds(room)
+  for (let x = start.x - 1; x < end.x + 1; x++) {
+    for (let y = start.y - 1; y < end.y + 1; y++) {
       let room = utils.roomNameFromXY(x, y)
       if (x % 2 === y % 2) {
         p1.push(room)
@@ -433,6 +461,18 @@ async function generateSector (room) {
   console.log(sx, sy, start, end, p1, p2)
   await Promise.all(p1.map(room => gen(room)))
   await Promise.all(p2.map(room => gen(room)))
+}
+
+
+function deleteSector (room) {
+  let p1 = []
+  let p2 = []
+  let { start, end } = getSectorBounds(room)
+  for (let x = start.x; x < end.x; x++) {
+    for (let y = start.y; y < end.y; y++) {
+      makeSolidRoom(x, y)
+    }
+  }
 }
 
 function createGrid () {
