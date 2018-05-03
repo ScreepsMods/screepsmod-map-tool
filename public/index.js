@@ -714,7 +714,9 @@ function generateRoom (roomName, opts) {
         y,
         terrain,
         objects,
-        opts
+        opts,
+        sourceKeepers: opts.keeperLairs,
+        bus: !opts.sources && !opts.mineral
       }
     }
   })
