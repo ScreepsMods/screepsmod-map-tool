@@ -458,7 +458,7 @@ async function generateSector (room) {
       if (~ind) terrain.splice(ind, 1)
     }
   }
-  console.log(sx, sy, start, end, p1, p2)
+  //console.log(sx, sy, start, end, p1, p2)
   await Promise.all(p1.map(room => gen(room)))
   await Promise.all(p2.map(room => gen(room)))
 }
