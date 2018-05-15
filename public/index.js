@@ -351,7 +351,111 @@ function generateRoom (roomName, opts) {
     return newTerrain
   }
 
-  function _genTerrain (wallType, swampType, exits, sources, controller, keeperLair) {
+  function _findSourceSpot (terrain) {
+    var x, y
+    var tries = 0
+
+    do {
+      tries++
+
+      x = Math.floor(Math.random() * 44) + 3
+      y = Math.floor(Math.random() * 44) + 3
+
+      var passNearby = false
+      for (var dx = -1; dx <= 1; dx++) {
+        for (var dy = -1; dy <= 1; dy++) {
+          if (x + dx < 0 || y + dy < 0 || x + dx > 49 || y + dy > 49) {
+            continue
+          }
+          if (!terrain[y + dy][x + dx].wall) {
+            passNearby = true
+            break
+          }
+        }
+      }
+
+      var lairNearby = false;
+      if (passNearby) {
+        for (var dx = -5; dx <= 5; dx++) {
+          for (var dy = -5; dy <= 5; dy++) {
+            if (x + dx < 0 || y + dy < 0 || x + dx > 49 || y + dy > 49) {
+              continue
+            }
+            if (terrain[y + dy][x + dx].keeperLair) {
+              lairNearby = true
+              break
+            }
+          }
+        }
+      }
+
+      if (tries > 1000) {
+        return [-1,-1];
+      }
+    }
+    while (!terrain[y][x].wall || !passNearby || lairNearby)
+
+    return [x,y];
+  }
+
+  function _findKeeperLairSpot(terrain, x, y) {
+    var lairSpots = [],
+      list = [[x, y]],
+      visited = {[`${x},${y}`]: 0}
+
+    do {
+      var [cx, cy] = list.pop()
+      for (var dx = -1; dx <= 1; dx++) {
+        for (var dy = -1; dy <= 1; dy++) {
+          if (!dx && !dy || !_.isUndefined(visited[`${cx + dx},${cy + dy}`])) {
+            continue
+          }
+          if (cx + dx < 0 || cy + dy < 0 || cx + dx > 49 || cy + dy > 49) {
+            continue
+          }
+          var distance = visited[`${cx},${cy}`] + 1
+          visited[`${cx + dx},${cy + dy}`] = distance
+          if (distance >= 3 && distance <= 5 && terrain[cy + dy][cx + dx].wall && !terrain[cy + dy][cx + dx].source &&
+                          (cx + dx > 0 && cx + dx < 49 && cy + dy > 0 && cy + dy < 49)) {
+            lairSpots.push([cx + dx, cy + dy])
+          }
+          if (!terrain[cy + dy][cx + dx].wall && distance < 5) {
+            list.push([cx + dx, cy + dy])
+          }
+        }
+      }
+    }
+    while (list.length > 0)
+
+    if (lairSpots.length > 0) {
+      lairSpots = _.shuffle(lairSpots)
+      for (let i=0; i<lairSpots.length; i++) {
+        var foundSource = false;
+        for (var dx = -5; dx <= 5; dx++) {
+          for (var dy = -5; dy <= 5; dy++) {
+            if (lairSpots[i][0] + dx < 0 || lairSpots[i][1] + dy < 0 || lairSpots[i][0] + dx > 49 || lairSpots[i][1] + dy > 49) {
+              continue;
+            }
+            if (lairSpots[i][0] + dx == x && lairSpots[i][1] + dy == y) {
+              continue;
+            }
+            if (terrain[lairSpots[i][0] + dx][lairSpots[i][1] + dy].source) {
+              foundSource = true;
+            }
+          }
+        }
+
+        if (!foundSource) {
+          return [lairSpots[i][0], lairSpots[i][1]];
+        }
+
+      }
+    }
+
+    return [-1, -1]
+  }
+
+  function _genTerrain (wallType, swampType, exits, sources, controller, keeperLair, mineral) {
     var types = {
       1: {fill: 0.4, smooth: 10, factor: 5},
       2: {fill: 0.2, smooth: 20, factor: 4},
@@ -466,72 +570,42 @@ function generateRoom (roomName, opts) {
     }
 
     for (var i = 0; i < sources; i++) {
-      var x, y
-      var tries = 0
+      let [x,y] = _findSourceSpot(terrain);
 
-      do {
-        tries++
-
-        x = Math.floor(Math.random() * 44) + 3
-        y = Math.floor(Math.random() * 44) + 3
-
-        var passNearby = false
-        for (var dx = -1; dx <= 1; dx++) {
-          for (var dy = -1; dy <= 1; dy++) {
-            if (x + dx < 0 || y + dy < 0 || x + dx > 49 || y + dy > 49) {
-              continue
-            }
-            if (!terrain[y + dy][x + dx].wall) {
-              passNearby = true
-              break
-            }
-          }
-        }
-
-        if (tries > 1000) {
-          return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair)
-        }
+      if (x == -1 && y == -1) {
+        return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral)
       }
-      while (!terrain[y][x].wall || !passNearby)
 
       terrain[y][x].source = true
 
       if (keeperLair) {
-        var lairSpots = [],
-          list = [[x, y]],
-          visited = {[`${x},${y}`]: 0}
+        [x,y] = _findKeeperLairSpot(terrain, x, y);
 
-        do {
-          var [cx, cy] = list.pop()
-          for (var dx = -1; dx <= 1; dx++) {
-            for (var dy = -1; dy <= 1; dy++) {
-              if (!dx && !dy || !_.isUndefined(visited[`${cx + dx},${cy + dy}`])) {
-                continue
-              }
-              if (cx + dx < 0 || cy + dy < 0 || cx + dx > 49 || cy + dy > 49) {
-                continue
-              }
-              var distance = visited[`${cx},${cy}`] + 1
-              visited[`${cx + dx},${cy + dy}`] = distance
-              if (distance >= 3 && distance <= 5 && terrain[cy + dy][cx + dx].wall && !terrain[cy + dy][cx + dx].source &&
-                              (cx + dx > 0 && cx + dx < 49 && cy + dy > 0 && cy + dy < 49)) {
-                lairSpots.push([cx + dx, cy + dy])
-              }
-              if (!terrain[cy + dy][cx + dx].wall && distance < 5) {
-                list.push([cx + dx, cy + dy])
-              }
-            }
-          }
+        if (x==-1 && y==-1) {
+          return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral);
         }
-        while (list.length > 0)
 
-        if (lairSpots.length > 0) {
-          terrain[y][x].source = true
-          lairSpots = _.shuffle(lairSpots)
-          terrain[lairSpots[0][1]][lairSpots[0][0]].keeperLair = true
-        } else {
-          return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair)
+        terrain[y][x].keeperLair = true;
+      }
+    }
+
+    if (true) { // mineral
+      let [x,y] = _findSourceSpot(terrain);
+
+      if (x == -1 && y == -1) {
+        return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral)
+      }
+
+      terrain[y][x].mineral = true
+
+      if (keeperLair) {
+        [x,y] = _findKeeperLairSpot(terrain, x, y);
+
+        if (x==-1 && y==-1) {
+          return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral);
         }
+
+        terrain[y][x].keeperLair = true;
       }
     }
 
@@ -606,7 +680,7 @@ function generateRoom (roomName, opts) {
       opts.keeperLairs = false
     }
 
-    var roomData = _genTerrain(opts.terrainType, opts.swampType, opts.exits, opts.sources, opts.controller, opts.keeperLairs)
+    var roomData = _genTerrain(opts.terrainType, opts.swampType, opts.exits, opts.sources, opts.controller, opts.keeperLairs, opts.mineral)
 
     var objects = [], terrain = [], x, y, sourceKeepers = false
 
@@ -652,16 +726,40 @@ function generateRoom (roomName, opts) {
             terrain.push({type: 'swamp', x, y})
           }
         }
+
+        if (roomData[y][x].mineral) {
+          if (opts.mineral === undefined) {
+            var types = ['H', 'H', 'H', 'H', 'H', 'H', 'O', 'O', 'O', 'O', 'O', 'O', 'Z', 'Z', 'Z', 'K', 'K', 'K', 'U', 'U', 'U', 'L', 'L', 'L', 'X']
+            opts.mineral = types[Math.floor(Math.random() * types.length)]
+          }
+
+          if (opts.mineral){
+            var random = Math.random(), density
+            for (var d in C.MINERAL_DENSITY_PROBABILITY) {
+              if (random <= C.MINERAL_DENSITY_PROBABILITY[d]) {
+                density = +d
+                break
+              }
+            }
+
+            objects.push({room: roomName, type: 'mineral', x, y, mineralType: opts.mineral, density: density, mineralAmount: C.MINERAL_DENSITY[density]})
+            if (!opts.controller || opts.keeperLairs) {
+              objects.push({
+                type: 'extractor',
+                x: x,
+                y: y,
+                room: roomName
+              })
+            }
+          }
+        }
       }
     }
 
     terrain = common.encodeTerrain(terrain)
 
-    if (opts.mineral === undefined) {
-      var types = ['H', 'H', 'H', 'H', 'H', 'H', 'O', 'O', 'O', 'O', 'O', 'O', 'Z', 'Z', 'Z', 'K', 'K', 'K', 'U', 'U', 'U', 'L', 'L', 'L', 'X']
-      opts.mineral = types[Math.floor(Math.random() * types.length)]
-    }
 
+    /*
     if (opts.mineral) {
       var mx, my, isWall, hasSpot, hasObjects
       do {
@@ -680,13 +778,6 @@ function generateRoom (roomName, opts) {
       }
       while (!isWall || !hasSpot || hasObjects)
 
-      var random = Math.random(), density
-      for (var d in C.MINERAL_DENSITY_PROBABILITY) {
-        if (random <= C.MINERAL_DENSITY_PROBABILITY[d]) {
-          density = +d
-          break
-        }
-      }
 
       objects.push({
         type: 'mineral',
@@ -705,7 +796,7 @@ function generateRoom (roomName, opts) {
           room: roomName
         })
       }
-    }
+    }*/
     {
       let [x, y] = utils.roomNameToXY(roomName)
       return {
