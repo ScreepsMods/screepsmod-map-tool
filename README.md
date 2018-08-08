@@ -1,5 +1,8 @@
 # screepsmod-map-tool
 
+# Important Note
+## This mod MUST be before other mods in the mod list, some other mods (One of mine most likely) pollute the server request and break this one, loading it first solves that issue.
+
 # Usage: 
 
 URL: http://yourServerIP:21025/maptool/ 
