@@ -1,15 +1,8 @@
 {
   "name": "screepsmod-map-tool",
-  "version": "1.2.0",
-  "description": "",
+  "version": "2.0.0-beta",
+  "description": "Screeps Private Server map tool",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 0",
-    "2npm": "publish"
-  },
-  "devDependencies": {
-    "publish": "^0.6.0"
-  },
   "screeps_mod": true,
   "keywords": [
     "screeps",
@@ -17,9 +10,28 @@
   ],
   "author": "Adam Shumann",
   "license": "MIT",
+  "scripts": {
+    "dev": "nuxt",
+    "build": "nuxt build",
+    "start": "nuxt start",
+    "generate": "nuxt generate",
+    "test": "echo \"Error: no test specified\" && exit 0",
+    "2npm": "publish"
+  },
   "dependencies": {
+    "@nuxtjs/axios": "^5.0.0",
     "basic-auth": "^2.0.0",
     "fs-router": "^0.4.0",
-    "micro": "^9.1.0"
+    "micro": "^9.1.0",
+    "nuxt": "^1.0.0",
+    "vuetify": "^1.0.19"
+  },
+  "devDependencies": {
+    "@nuxtjs/proxy": "^1.2.4",
+    "cross-env": "^5.0.1",
+    "publish": "^0.6.0",
+    "stylus": "^0.54.5",
+    "stylus-loader": "^3.0.1",
+    "worker-loader": "^2.0.0"
   }
 }
