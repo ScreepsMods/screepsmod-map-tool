@@ -4,7 +4,6 @@ importScripts('q.js')
 self.q = self.Q
 
 addEventListener('message', msg => {
-  console.log('worker', msg)
   if (msg.data && msg.data.action == 'generate') {
     self.terrainCache = msg.data.terrainCache
     let [x, y] = utils.roomNameToXY(msg.data.room)
@@ -37,13 +36,13 @@ addEventListener('message', msg => {
         terrainType: Math.floor(Math.random() * 2) + 1,
         swampType: 0,
         sources: 0,
-        depositType: depositTypes[(lon + lat) % 4]
+        depositType: depositTypes[(lon + lat) % 4],
+        hall: true
       }
     }
     opts = map[type]
     opts.wallChance = msg.data.wallChance
     generateRoom(msg.data.room, opts).then(room => {
-      console.log(room)
       if (sk || center) {
         let min = room.objects.find(o => o.type == 'mineral')
         let { x, y } = min

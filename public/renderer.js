@@ -14,12 +14,13 @@ let vp = { x: 0, y: 0 }
 let scale = 1
 let flood = false
 
+let overlay = ''
+
 prefetch()
 function prefetch () {
   getAllTerrain(true)
     .then(ts => {
       ts.map(t => {
-        console.log(t)
         let { room } = t
         let [ x, y ] = utils.roomNameToXY(room)
         window.terrainCache[room] = Object.assign(t, {
@@ -175,6 +176,14 @@ function render () {
     let room = terrain.find(t => t.room == cell.room)
     ctx.restore()
   }
+  if (overlay) {
+    ctx.save()
+    ctx.font = `32px Roboto`
+    ctx.fillStyle = 'red'
+    ctx.fillText(overlay, 10, 50)
+    //const { width } = ctx.measureText(overlay)
+    ctx.restore()
+  }
 }
 
 let imageCache = {}
@@ -286,6 +295,7 @@ function gen (room) {
   if (~ind) {
     window.terrain.splice(ind, 1)
   }
+  delete terrainCache[room]
   let opts = generateOptions
   // worker.postMessage({ action: 'generate', room, terrainCache, opts })
   let id = Math.random().toString(36).slice(2)
@@ -301,7 +311,7 @@ for (let i = 0; i < pool.count; i++) {
     if (pool.idle.indexOf(worker) === -1) {
       pool.idle.push(worker)
     }
-    console.log(msg)
+    //console.log(msg)
     if (msg.data.action === 'generate') {
       let r = msg.data.room
       if (r.opts) {
@@ -314,7 +324,7 @@ for (let i = 0; i < pool.count; i++) {
       }
       window.terrain.push(r)
       window.terrainCache[r.room] = r
-      console.log(r)
+      //console.log(r)
       output.value = JSON.stringify(terrain.filter(r => !r.remote))
     }
     let { id } = msg.data
@@ -328,7 +338,7 @@ for (let i = 0; i < pool.count; i++) {
 }
 
 function save (active) {
-  if (!prompt('Are you sure you want to save?')) return
+  if (!confirm('Are you sure you want to save?')) return
   terrain.forEach(r => r.status = r.status || (active ? 'normal' : 'out of borders'))
   let json = JSON.stringify(terrain.filter(r => !r.remote))
   fetch(`${server}/api/maptool/set`, {
@@ -508,6 +518,85 @@ function createGrid () {
       ])
     }
   }
+}
+
+async function autoGen(sizex, sizey) {
+  if (sizex % 2 !== 0 || sizey % 2 !== 0) {
+    alert(`autoGen aborted!\nautoGen requires even numbers for width and height`)
+    return
+  }
+  if(!confirm('Warning: Auto Gen erases all current rooms, are you sure?')) return
+  terrain.splice(0, Number.MAX_VALUE)
+  for (const k of Object.keys(terrainCache)) {
+    delete terrainCache[k]
+  }
+  const hw = sizex / 2
+  const hh = sizey / 2
+  const rooms = new Set()
+  for (let sy = -hh - 1; sy <= hh; sy++) {
+    const startx = (-hw * 10) - 1
+    const endx = (hw * 10)
+    let y = sy * 10
+    if (y < 0) y += 9
+    for (let x = startx; x < endx; x++) {
+      rooms.add(utils.roomNameFromXY(x, y))
+    }
+  }
+  for (let sx = -hw - 1; sx <= hw; sx++) {
+    const starty = (-hh * 10) - 1
+    const endy = (hh * 10) + 1
+    let x = sx * 10
+    if (x < 0) x += 9
+    for (let y = starty; y < endy; y++) {
+      rooms.add(utils.roomNameFromXY(x, y))
+    }
+  }
+
+  for (let ry = -hh * 10; ry <= hh * 10; ry++) {
+    const startx = (-hw * 10) - 1
+    const endx = (hw * 10)
+    let y = ry
+    for (let x = startx; x < endx; x++) {
+      const r = utils.roomNameFromXY(x, y)
+      if (!rooms.has(r)) {
+        rooms.add(r)
+      }
+    }
+  }
+
+  const q1 = []
+  const q2 = []
+  for (const roomName of rooms) {
+    const [x, y] = utils.roomNameToXY(roomName)
+    // makeSolidRoom(x, y)
+    if (q1.length === q2.length) {
+      q1.push(roomName)
+    } else {
+      q2.push(roomName)
+    }
+  }
+  let complete = 0
+  let total = q1.length + q2.length
+  let stage = 'rooms'
+  let update = () => {
+    complete++
+    overlay = `Generating ${stage} ${complete} of ${total} completed`
+    console.log(overlay)
+  }
+  const ps = []
+  for (const roomName of q1) {
+    ps.push(gen(roomName).then(update))
+  }
+  await Promise.all(ps)
+  ps.splice(0, Number.MAX_VALUE)
+  for (const roomName of q2) {
+    ps.push(gen(roomName).then(update))
+  }
+  await Promise.all(ps)
+
+  generateSolidWall()
+  overlay = ''
+  alert('autoGen completed successfully')
 }
 
 // terrain.forEach(t => {

@@ -198,6 +198,7 @@ function generateRoom (roomName, opts) {
 
   function _genExit () {
     var exitLength = Math.floor(Math.random() * 43) + 1
+    if (opts.hall) exitLength = Math.ceil(Math.random() * 33) + 30
     var intervalsCnt = [0, 0, 1, 1, 2][Math.floor(Math.random() * 5)]
     var exit = []
 
@@ -264,12 +265,14 @@ function generateRoom (roomName, opts) {
         exits[dir] = _exitsArray(neighbor.terrain, x, y)
       } else {
         let sk = !!roomName.match(/^[EW]\d*[4-6][NS]\d*[4-6]$/)
-        console.log('sk', sk)
+        let hallx = !!roomName.match(/^[EW]\d*[NS]\d*0$/)
+        let hally = !!roomName.match(/^[EW]\d*0[NS]\d*$/)
         let [x, y] = utils.roomNameToXY(roomName)
-        exits[dir] = sk || Math.random() > (wallChance || 0.3) ? _genExit() : []
-        if (x % 10 === 0 && (dir === 'top' || dir === 'bottom')) { exits[dir] = _genExit() }
-        if (y % 10 === 0 && (dir === 'left' || dir === 'right')) { exits[dir] = _genExit() }
-        console.log('exits', dir, exits[dir])
+        let val = Math.random() > (wallChance || 0.3)
+        val |= sk
+        val |= (dir == 'left' || dir == 'right') && hallx
+        val |= (dir == 'top' || dir == 'bottom') && hally
+        exits[dir] = val ? _genExit() : []
       }
       return true
     }
