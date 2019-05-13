@@ -154,6 +154,8 @@ function render () {
     ctx.beginPath()
     let w = Math.abs(end.x - start.x)
     let h = Math.abs(end.y - start.y)
+    // if (start.x >= 0) start.x += 1
+    // if (start.y >= 0) start.y += 1
     ctx.rect(start.x * s, start.y * s, w * s, h * s)
     ctx.strokeStyle = 'yellow'
     ctx.stroke()
@@ -434,7 +436,7 @@ function getSectorBounds (room) {
   let sx = x - (x % 10)
   let sy = y - (y % 10)
   let start = { x: sx, y: sy }
-  let end = { x: sx + 9, y: sy + 9 }
+  let end = { x: sx + 10, y: sy + 10 }
   return { start, end }
 }
 
@@ -442,8 +444,16 @@ async function generateSector (room) {
   let p1 = []
   let p2 = []
   let { start, end } = getSectorBounds(room)
-  for (let x = start.x - 1; x < end.x + 1; x++) {
-    for (let y = start.y - 1; y < end.y + 1; y++) {
+  if (start.x < 0) {
+    start.x -= 1
+    end.x -= 1
+  }
+  if (start.y < 0) {
+    start.y -= 1
+    end.y -= 1
+  }
+  for (let x = start.x; x < end.x + 1; x++) {
+    for (let y = start.y; y < end.y + 1; y++) {
       let room = utils.roomNameFromXY(x, y)
       if (x % 2 === y % 2) {
         p1.push(room)
