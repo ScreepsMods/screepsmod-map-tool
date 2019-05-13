@@ -19,6 +19,8 @@ this is useful to find isolated rooms
 `Save` saves the generated rooms as `out of bounds`
 `Save Active` is the same as save, except rooms are set to `normal`
 
+`Auto Gen` will generate an entire map of the specified size (Can run `autoGen(w,h)` from console for custom sizes)
+
 The slider controls the solid wall chances, show walls will show solid walls for 
 newly generated rooms _only_
 
