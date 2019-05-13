@@ -1,6 +1,5 @@
 window.terrain = []
 window.q = window.Q
-const mapSize = { x: 20, y: 10 }
 
 let floodTolerance = 37
 
@@ -10,7 +9,6 @@ let generateOptions = {
 
 let mp = { x: 0, y: 0 }
 let mb = { left: false, right: false }
-let md = { x: 0, y: 0 }
 let vp = { x: 0, y: 0 }
 
 let scale = 1
@@ -18,7 +16,6 @@ let flood = false
 
 prefetch()
 function prefetch () {
-  let rooms = []
   getAllTerrain(true)
     .then(ts => {
       ts.map(t => {
@@ -84,7 +81,7 @@ canvas.addEventListener('mouseup', e => {
   mb[btn] = {}
   if (drag) return
   if (btn == 'left') {
-    if(ctrlKey) {
+    if (ctrlKey) {
       generateSector(room)
     } else {
       gen(room)
@@ -371,7 +368,7 @@ function makeNovice () {
           x = i
           y = 0
         }
-        r.objects.push({ type: 'constructedWall', room, x, y, decayTime: { timestamp: d }})
+        r.objects.push({ type: 'constructedWall', room, x, y, decayTime: { timestamp: d } })
       }
     }
     if (!r.bus) {
@@ -397,7 +394,7 @@ function findBounds () {
 }
 
 function generateSolidWall () {
-  let { start, end } = findBounds ()
+  let { start, end } = findBounds()
   for (let x = start.x - 1; x <= end.x + 1; x++) {
     for (let y = start.y - 1; y <= end.y + 1; y++) {
       let room = terrain.find(r => r.x === x && r.y === y)
@@ -406,9 +403,8 @@ function generateSolidWall () {
       }
     }
   }
-  
-  // let start = { x: 0, y: 0 }
-  // let end = mapSize
+
+  // let start = { x: 
 
   // for (let x = start.x - 1; x <= end.x + 1; x++) {
   //   makeSolidRoom(x, start.y - 1)
@@ -431,12 +427,12 @@ function makeSolidRoom (x, y) {
   else window.terrain.push(obj)
 }
 
-function getSectorBounds(room) {
+function getSectorBounds (room) {
   let [x, y] = utils.roomNameToXY(room)
-  let sx = x - (x % 10) + 1
-  let sy = y - (y % 10) + 1
-  if(x < 0) sx -= 11
-  if(y < 0) sy -= 11
+  if (x < 0) x -= 9
+  if (y < 0) y -= 9
+  let sx = x - (x % 10)
+  let sy = y - (y % 10)
   let start = { x: sx, y: sy }
   let end = { x: sx + 9, y: sy + 9 }
   return { start, end }
@@ -458,11 +454,10 @@ async function generateSector (room) {
       if (~ind) terrain.splice(ind, 1)
     }
   }
-  //console.log(sx, sy, start, end, p1, p2)
+  // console.log(sx, sy, start, end, p1, p2)
   await Promise.all(p1.map(room => gen(room)))
   await Promise.all(p2.map(room => gen(room)))
 }
-
 
 function deleteSector (room) {
   let p1 = []

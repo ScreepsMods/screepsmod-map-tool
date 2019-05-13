@@ -37,7 +37,7 @@ const C = {
   RESOURCE_SILICON: 'silicon',
   RESOURCE_METAL: 'metal',
   RESOURCE_BIOMASS: 'biomass',
-  RESOURCE_MIST: 'mist',
+  RESOURCE_MIST: 'mist'
 }
 
 const common = {
@@ -45,12 +45,13 @@ const common = {
     var result = ''
     for (var y = 0; y < 50; y++) {
       for (var x = 0; x < 50; x++) {
-        var objects = _.filter(terrain, {x, y}),
-          code = 0
-        if (_.some(objects, {type: 'wall'})) {
+        var objects = _.filter(terrain, { x, y })
+
+        var code = 0
+        if (_.some(objects, { type: 'wall' })) {
           code = code | 1
         }
-        if (_.some(objects, {type: 'swamp'})) {
+        if (_.some(objects, { type: 'swamp' })) {
           code = code | 2
         }
         result = result + code
@@ -64,10 +65,10 @@ const common = {
       for (var x = 0; x < 50; x++) {
         var code = str.charAt(y * 50 + x)
         if (code & 1) {
-          result.push({room, x, y, type: 'wall'})
+          result.push({ room, x, y, type: 'wall' })
         }
         if (code & 2) {
-          result.push({room, x, y, type: 'swamp'})
+          result.push({ room, x, y, type: 'swamp' })
         }
       }
     }
@@ -98,13 +99,13 @@ const utils = {
       x = -x - 1
     } else {
       x = +x
-        // x--;
+      // x--;
     }
     if (ver == 'N') {
       y = -y - 1
     } else {
       y = +y
-        // y--;
+      // y--;
     }
     return [x, y]
   },
@@ -123,8 +124,9 @@ const utils = {
     return image
   },
   createTerrainColorsMap (terrain, zoomIn) {
-    var colors = {},
-      width = 50, height = 50
+    var colors = {}
+
+    var width = 50; var height = 50
 
     for (var y = 0; y < height; y++) {
       if (zoomIn) {
@@ -197,10 +199,13 @@ function generateRoom (roomName, opts) {
   function _genExit () {
     var exitLength = Math.floor(Math.random() * 43) + 1
     var intervalsCnt = [0, 0, 1, 1, 2][Math.floor(Math.random() * 5)]
-    var exit = [],
-      exitStart = Math.floor(Math.random() * (46 - exitLength)) + 2,
-      intervals = {},
-      curStart = exitStart
+    var exit = []
+
+    var exitStart = Math.floor(Math.random() * (46 - exitLength)) + 2
+
+    var intervals = {}
+
+    var curStart = exitStart
 
     for (var j = 0; j < intervalsCnt; j++) {
       curStart += Math.floor(Math.random() * (exitLength / (intervalsCnt * 2))) + 5
@@ -296,8 +301,9 @@ function generateRoom (roomName, opts) {
 
     var list = [[startX, startY]]
     do {
-      var i = list.pop(),
-        x = i[0], y = i[1]
+      var i = list.pop()
+
+      var x = i[0]; var y = i[1]
 
       visited[y][x] = true
       for (var dx = -1; dx <= 1; dx++) {
@@ -379,7 +385,7 @@ function generateRoom (roomName, opts) {
         }
       }
 
-      var lairNearby = false;
+      var lairNearby = false
       if (passNearby) {
         for (var dx = -5; dx <= 5; dx++) {
           for (var dy = -5; dy <= 5; dy++) {
@@ -395,18 +401,20 @@ function generateRoom (roomName, opts) {
       }
 
       if (tries > 1000) {
-        return [-1,-1];
+        return [-1, -1]
       }
     }
     while (!terrain[y][x].wall || !passNearby || lairNearby)
 
-    return [x,y];
+    return [x, y]
   }
 
-  function _findKeeperLairSpot(terrain, x, y) {
-    var lairSpots = [],
-      list = [[x, y]],
-      visited = {[`${x},${y}`]: 0}
+  function _findKeeperLairSpot (terrain, x, y) {
+    var lairSpots = []
+
+    var list = [[x, y]]
+
+    var visited = { [`${x},${y}`]: 0 }
 
     do {
       var [cx, cy] = list.pop()
@@ -434,26 +442,25 @@ function generateRoom (roomName, opts) {
 
     if (lairSpots.length > 0) {
       lairSpots = _.shuffle(lairSpots)
-      for (let i=0; i<lairSpots.length; i++) {
-        var foundSource = false;
+      for (let i = 0; i < lairSpots.length; i++) {
+        var foundSource = false
         for (var dx = -5; dx <= 5; dx++) {
           for (var dy = -5; dy <= 5; dy++) {
             if (lairSpots[i][0] + dx < 0 || lairSpots[i][1] + dy < 0 || lairSpots[i][0] + dx > 49 || lairSpots[i][1] + dy > 49) {
-              continue;
+              continue
             }
             if (lairSpots[i][0] + dx == x && lairSpots[i][1] + dy == y) {
-              continue;
+              continue
             }
             if (terrain[lairSpots[i][0] + dx][lairSpots[i][1] + dy].source) {
-              foundSource = true;
+              foundSource = true
             }
           }
         }
 
         if (!foundSource) {
-          return [lairSpots[i][0], lairSpots[i][1]];
+          return [lairSpots[i][0], lairSpots[i][1]]
         }
-
       }
     }
 
@@ -462,58 +469,58 @@ function generateRoom (roomName, opts) {
 
   function _genTerrain (wallType, swampType, exits, sources, controller, keeperLair, mineral) {
     var types = {
-      1: {fill: 0.4, smooth: 10, factor: 5},
-      2: {fill: 0.2, smooth: 20, factor: 4},
-      3: {fill: 0.2, smooth: 20, factor: 4},
-      4: {fill: 0.3, smooth: 18, factor: 4},
-      5: {fill: 0.3, smooth: 10, factor: 4},
-      6: {fill: 0.3, smooth: 10, factor: 4},
-      7: {fill: 0.3, smooth: 10, factor: 4},
-      8: {fill: 0.35, smooth: 15, factor: 4},
-      9: {fill: 0.3, smooth: 2, factor: 4},
-      10: {fill: 0.35, smooth: 2, factor: 4},
-      11: {fill: 0.35, smooth: 5, factor: 4},
-      12: {fill: 0.35, smooth: 5, factor: 4},
-      13: {fill: 0.25, smooth: 5, factor: 4},
+      1: { fill: 0.4, smooth: 10, factor: 5 },
+      2: { fill: 0.2, smooth: 20, factor: 4 },
+      3: { fill: 0.2, smooth: 20, factor: 4 },
+      4: { fill: 0.3, smooth: 18, factor: 4 },
+      5: { fill: 0.3, smooth: 10, factor: 4 },
+      6: { fill: 0.3, smooth: 10, factor: 4 },
+      7: { fill: 0.3, smooth: 10, factor: 4 },
+      8: { fill: 0.35, smooth: 15, factor: 4 },
+      9: { fill: 0.3, smooth: 2, factor: 4 },
+      10: { fill: 0.35, smooth: 2, factor: 4 },
+      11: { fill: 0.35, smooth: 5, factor: 4 },
+      12: { fill: 0.35, smooth: 5, factor: 4 },
+      13: { fill: 0.25, smooth: 5, factor: 4 },
 
-      14: {fill: 0.4, smooth: 3, factor: 5},
-      15: {fill: 0.5, smooth: 3, factor: 5},
-      16: {fill: 0.45, smooth: 4, factor: 5},
-      17: {fill: 0.45, smooth: 6, factor: 5},
-      18: {fill: 0.45, smooth: 10, factor: 5},
-      19: {fill: 0.5, smooth: 10, factor: 5},
+      14: { fill: 0.4, smooth: 3, factor: 5 },
+      15: { fill: 0.5, smooth: 3, factor: 5 },
+      16: { fill: 0.45, smooth: 4, factor: 5 },
+      17: { fill: 0.45, smooth: 6, factor: 5 },
+      18: { fill: 0.45, smooth: 10, factor: 5 },
+      19: { fill: 0.5, smooth: 10, factor: 5 },
 
-      20: {fill: 0.4, smooth: 3, factor: 5},
-      21: {fill: 0.5, smooth: 2, factor: 5},
-      22: {fill: 0.45, smooth: 4, factor: 5},
-      23: {fill: 0.45, smooth: 6, factor: 5},
-      24: {fill: 0.45, smooth: 10, factor: 5},
-      25: {fill: 0.5, smooth: 10, factor: 5},
+      20: { fill: 0.4, smooth: 3, factor: 5 },
+      21: { fill: 0.5, smooth: 2, factor: 5 },
+      22: { fill: 0.45, smooth: 4, factor: 5 },
+      23: { fill: 0.45, smooth: 6, factor: 5 },
+      24: { fill: 0.45, smooth: 10, factor: 5 },
+      25: { fill: 0.5, smooth: 10, factor: 5 },
 
-      26: {fill: 0.45, smooth: 10, factor: 5},
-      27: {fill: 0.45, smooth: 6, factor: 5},
-      28: {fill: 0.2, smooth: 20, factor: 4}
+      26: { fill: 0.45, smooth: 10, factor: 5 },
+      27: { fill: 0.45, smooth: 6, factor: 5 },
+      28: { fill: 0.2, smooth: 20, factor: 4 }
     }
 
     var swampTypes = {
-      1: {fill: 0.3, smooth: 3, factor: 5},
-      2: {fill: 0.35, smooth: 3, factor: 5},
-      3: {fill: 0.45, smooth: 3, factor: 5},
-      4: {fill: 0.25, smooth: 1, factor: 5},
-      5: {fill: 0.25, smooth: 30, factor: 4},
-      6: {fill: 0.52, smooth: 30, factor: 5},
-      7: {fill: 0.45, smooth: 3, factor: 5},
-          // 7: {fill: 0.60, smooth: 3, factor: 5},
-      8: {fill: 0.3, smooth: 1, factor: 5},
-      9: {fill: 0.3, smooth: 1, factor: 4},
-      10: {fill: 0.3, smooth: 3, factor: 5},
-      11: {fill: 0.3, smooth: 3, factor: 5},
-      12: {fill: 0.3, smooth: 1, factor: 5},
-      13: {fill: 0.25, smooth: 1, factor: 5},
-      14: {fill: 0.35, smooth: 3, factor: 5}
+      1: { fill: 0.3, smooth: 3, factor: 5 },
+      2: { fill: 0.35, smooth: 3, factor: 5 },
+      3: { fill: 0.45, smooth: 3, factor: 5 },
+      4: { fill: 0.25, smooth: 1, factor: 5 },
+      5: { fill: 0.25, smooth: 30, factor: 4 },
+      6: { fill: 0.52, smooth: 30, factor: 5 },
+      7: { fill: 0.45, smooth: 3, factor: 5 },
+      // 7: {fill: 0.60, smooth: 3, factor: 5},
+      8: { fill: 0.3, smooth: 1, factor: 5 },
+      9: { fill: 0.3, smooth: 1, factor: 4 },
+      10: { fill: 0.3, smooth: 3, factor: 5 },
+      11: { fill: 0.3, smooth: 3, factor: 5 },
+      12: { fill: 0.3, smooth: 1, factor: 5 },
+      13: { fill: 0.25, smooth: 1, factor: 5 },
+      14: { fill: 0.35, smooth: 3, factor: 5 }
     }
 
-    var terrain, tries = 0
+    var terrain; var tries = 0
 
     do {
       terrain = {}
@@ -575,7 +582,7 @@ function generateRoom (roomName, opts) {
     }
 
     for (var i = 0; i < sources; i++) {
-      let [x,y] = _findSourceSpot(terrain);
+      let [x, y] = _findSourceSpot(terrain)
 
       if (x == -1 && y == -1) {
         return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral)
@@ -584,18 +591,18 @@ function generateRoom (roomName, opts) {
       terrain[y][x].source = true
 
       if (keeperLair) {
-        [x,y] = _findKeeperLairSpot(terrain, x, y);
+        [x, y] = _findKeeperLairSpot(terrain, x, y)
 
-        if (x==-1 && y==-1) {
-          return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral);
+        if (x == -1 && y == -1) {
+          return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral)
         }
 
-        terrain[y][x].keeperLair = true;
+        terrain[y][x].keeperLair = true
       }
     }
 
     if (true) { // mineral
-      let [x,y] = _findSourceSpot(terrain);
+      let [x, y] = _findSourceSpot(terrain)
 
       if (x == -1 && y == -1) {
         return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral)
@@ -604,13 +611,13 @@ function generateRoom (roomName, opts) {
       terrain[y][x].mineral = true
 
       if (keeperLair) {
-        [x,y] = _findKeeperLairSpot(terrain, x, y);
+        [x, y] = _findKeeperLairSpot(terrain, x, y)
 
-        if (x==-1 && y==-1) {
-          return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral);
+        if (x == -1 && y == -1) {
+          return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral)
         }
 
-        terrain[y][x].keeperLair = true;
+        terrain[y][x].keeperLair = true
       }
     }
 
@@ -646,125 +653,124 @@ function generateRoom (roomName, opts) {
     getTerrain(utils.roomNameFromXY(x, y + 1)),
     getTerrain(utils.roomNameFromXY(x - 1, y))
   ])
-  .then(neighborRooms => {
-    if (!_matchExitWithNeighbors(opts.exits, 'top', neighborRooms[0])) {
-      opts.exits.top = []
-          // return q.reject(`Exits in room ${neighborRooms[0].room} don't match`);
-    }
-    if (!_matchExitWithNeighbors(opts.exits, 'right', neighborRooms[1])) {
-      opts.exits.right = []
-          // return q.reject(`Exits in room ${neighborRooms[1].room} don't match`);
-    }
-    if (!_matchExitWithNeighbors(opts.exits, 'bottom', neighborRooms[2])) {
-      opts.exits.bottom = []
-          // return q.reject(`Exits in room ${neighborRooms[2].room} don't match`);
-    }
-    if (!_matchExitWithNeighbors(opts.exits, 'left', neighborRooms[3])) {
-      opts.exits.left = []
-          // return q.reject(`Exits in room ${neighborRooms[3].room} don't match`);
-    }
+    .then(neighborRooms => {
+      if (!_matchExitWithNeighbors(opts.exits, 'top', neighborRooms[0])) {
+        opts.exits.top = []
+        // return q.reject(`Exits in room ${neighborRooms[0].room} don't match`);
+      }
+      if (!_matchExitWithNeighbors(opts.exits, 'right', neighborRooms[1])) {
+        opts.exits.right = []
+        // return q.reject(`Exits in room ${neighborRooms[1].room} don't match`);
+      }
+      if (!_matchExitWithNeighbors(opts.exits, 'bottom', neighborRooms[2])) {
+        opts.exits.bottom = []
+        // return q.reject(`Exits in room ${neighborRooms[2].room} don't match`);
+      }
+      if (!_matchExitWithNeighbors(opts.exits, 'left', neighborRooms[3])) {
+        opts.exits.left = []
+        // return q.reject(`Exits in room ${neighborRooms[3].room} don't match`);
+      }
 
-    opts.exits.top = opts.exits.top || []
-    opts.exits.left = opts.exits.left || []
-    opts.exits.bottom = opts.exits.bottom || []
-    opts.exits.right = opts.exits.right || []
+      opts.exits.top = opts.exits.top || []
+      opts.exits.left = opts.exits.left || []
+      opts.exits.bottom = opts.exits.bottom || []
+      opts.exits.right = opts.exits.right || []
 
-    if (opts.terrainType === undefined) {
-      opts.terrainType = Math.floor(Math.random() * 27) + 1
-    }
-    if (opts.swampType === undefined) {
-      opts.swampType = Math.floor(Math.random() * 14)
-    }
-    if (opts.sources === undefined) {
-      opts.sources = Math.random() > 0.5 ? 1 : 2
-    }
-    if (opts.controller === undefined) {
-      opts.controller = true
-    }
-    if (opts.keeperLairs === undefined) {
-      opts.keeperLairs = false
-    }
+      if (opts.terrainType === undefined) {
+        opts.terrainType = Math.floor(Math.random() * 27) + 1
+      }
+      if (opts.swampType === undefined) {
+        opts.swampType = Math.floor(Math.random() * 14)
+      }
+      if (opts.sources === undefined) {
+        opts.sources = Math.random() > 0.5 ? 1 : 2
+      }
+      if (opts.controller === undefined) {
+        opts.controller = true
+      }
+      if (opts.keeperLairs === undefined) {
+        opts.keeperLairs = false
+      }
 
-    var roomData = _genTerrain(opts.terrainType, opts.swampType, opts.exits, opts.sources, opts.controller, opts.keeperLairs, opts.mineral)
+      var roomData = _genTerrain(opts.terrainType, opts.swampType, opts.exits, opts.sources, opts.controller, opts.keeperLairs, opts.mineral)
 
-    var objects = [], terrain = [], x, y, sourceKeepers = false
+      var objects = []; var terrain = []; var x; var y; var sourceKeepers = false
 
-    for (var y in roomData) {
-      y = parseInt(y)
-      for (var x in roomData[y]) {
-        x = parseInt(x)
-        if (roomData[y][x].wall) {
-          terrain.push({type: 'wall', x, y})
-        }
-        if (roomData[y][x].source) {
-          objects.push({
-            room: roomName,
-            type: 'source',
-            x,
-            y,
-            'energy': C.SOURCE_ENERGY_NEUTRAL_CAPACITY,
-            'energyCapacity': C.SOURCE_ENERGY_NEUTRAL_CAPACITY,
-            'ticksToRegeneration': C.ENERGY_REGEN_TIME
-          })
-        }
-        if (roomData[y][x].controller) {
-          objects.push({room: roomName, type: 'controller', x, y, level: 0})
-        }
-        if (roomData[y][x].keeperLair) {
-          objects.push({room: roomName, type: 'keeperLair', x, y})
-          sourceKeepers = true
-        }
-        if (roomData[y][x].swamp) {
-          var flag = false
-          for (var dx = -1; dx <= 1; dx++) {
-            for (var dy = -1; dy <= 1; dy++) {
-              if (x + dx >= 0 && y + dy >= 0 && x + dx <= 49 && y + dy <= 49 && !roomData[y + dy][x + dx].wall) {
-                flag = true
+      for (var y in roomData) {
+        y = parseInt(y)
+        for (var x in roomData[y]) {
+          x = parseInt(x)
+          if (roomData[y][x].wall) {
+            terrain.push({ type: 'wall', x, y })
+          }
+          if (roomData[y][x].source) {
+            objects.push({
+              room: roomName,
+              type: 'source',
+              x,
+              y,
+              'energy': C.SOURCE_ENERGY_NEUTRAL_CAPACITY,
+              'energyCapacity': C.SOURCE_ENERGY_NEUTRAL_CAPACITY,
+              'ticksToRegeneration': C.ENERGY_REGEN_TIME
+            })
+          }
+          if (roomData[y][x].controller) {
+            objects.push({ room: roomName, type: 'controller', x, y, level: 0 })
+          }
+          if (roomData[y][x].keeperLair) {
+            objects.push({ room: roomName, type: 'keeperLair', x, y })
+            sourceKeepers = true
+          }
+          if (roomData[y][x].swamp) {
+            var flag = false
+            for (var dx = -1; dx <= 1; dx++) {
+              for (var dy = -1; dy <= 1; dy++) {
+                if (x + dx >= 0 && y + dy >= 0 && x + dx <= 49 && y + dy <= 49 && !roomData[y + dy][x + dx].wall) {
+                  flag = true
+                  break
+                }
+              }
+              if (flag) {
                 break
               }
             }
             if (flag) {
-              break
+              terrain.push({ type: 'swamp', x, y })
             }
           }
-          if (flag) {
-            terrain.push({type: 'swamp', x, y})
-          }
-        }
 
-        if (roomData[y][x].mineral) {
-          if (opts.mineral === undefined) {
-            var types = ['H', 'H', 'H', 'H', 'H', 'H', 'O', 'O', 'O', 'O', 'O', 'O', 'Z', 'Z', 'Z', 'K', 'K', 'K', 'U', 'U', 'U', 'L', 'L', 'L', 'X']
-            opts.mineral = types[Math.floor(Math.random() * types.length)]
-          }
+          if (roomData[y][x].mineral) {
+            if (opts.mineral === undefined) {
+              var types = ['H', 'H', 'H', 'H', 'H', 'H', 'O', 'O', 'O', 'O', 'O', 'O', 'Z', 'Z', 'Z', 'K', 'K', 'K', 'U', 'U', 'U', 'L', 'L', 'L', 'X']
+              opts.mineral = types[Math.floor(Math.random() * types.length)]
+            }
 
-          if (opts.mineral){
-            var random = Math.random(), density
-            for (var d in C.MINERAL_DENSITY_PROBABILITY) {
-              if (random <= C.MINERAL_DENSITY_PROBABILITY[d]) {
-                density = +d
-                break
+            if (opts.mineral) {
+              var random = Math.random(); var density
+              for (var d in C.MINERAL_DENSITY_PROBABILITY) {
+                if (random <= C.MINERAL_DENSITY_PROBABILITY[d]) {
+                  density = +d
+                  break
+                }
               }
-            }
 
-            objects.push({room: roomName, type: 'mineral', x, y, mineralType: opts.mineral, density: density, mineralAmount: C.MINERAL_DENSITY[density]})
-            if (!opts.controller || opts.keeperLairs) {
-              objects.push({
-                type: 'extractor',
-                x: x,
-                y: y,
-                room: roomName
-              })
+              objects.push({ room: roomName, type: 'mineral', x, y, mineralType: opts.mineral, density: density, mineralAmount: C.MINERAL_DENSITY[density] })
+              if (!opts.controller || opts.keeperLairs) {
+                objects.push({
+                  type: 'extractor',
+                  x: x,
+                  y: y,
+                  room: roomName
+                })
+              }
             }
           }
         }
       }
-    }
 
-    terrain = common.encodeTerrain(terrain)
+      terrain = common.encodeTerrain(terrain)
 
-
-    /*
+      /*
     if (opts.mineral) {
       var mx, my, isWall, hasSpot, hasObjects
       do {
@@ -783,7 +789,6 @@ function generateRoom (roomName, opts) {
       }
       while (!isWall || !hasSpot || hasObjects)
 
-
       objects.push({
         type: 'mineral',
         mineralType: opts.mineral,
@@ -801,20 +806,20 @@ function generateRoom (roomName, opts) {
           room: roomName
         })
       }
-    }*/
-    {
-      let [x, y] = utils.roomNameToXY(roomName)
-      return {
-        room: roomName,
-        x,
-        y,
-        terrain,
-        objects,
-        opts,
-        sourceKeepers: opts.keeperLairs,
-        depositType: opts.depositType,
-        bus: !opts.sources && !opts.mineral
+    } */
+      {
+        let [x, y] = utils.roomNameToXY(roomName)
+        return {
+          room: roomName,
+          x,
+          y,
+          terrain,
+          objects,
+          opts,
+          sourceKeepers: opts.keeperLairs,
+          depositType: opts.depositType,
+          bus: !opts.sources && !opts.mineral
+        }
       }
-    }
-  })
+    })
 }

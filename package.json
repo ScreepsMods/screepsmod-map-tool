@@ -4,11 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 0",
+    "test": "npx standard lib/**/*.js",
     "2npm": "publish"
   },
   "devDependencies": {
-    "publish": "^0.6.0"
+    "publish": "^0.6.0",
+    "standard": "^12.0.1"
   },
   "screeps_mod": true,
   "keywords": [
@@ -18,8 +19,6 @@
   "author": "Adam Shumann",
   "license": "MIT",
   "dependencies": {
-    "basic-auth": "^2.0.0",
-    "fs-router": "^0.4.0",
-    "micro": "^9.1.0"
+    "basic-auth": "^2.0.0"
   }
 }
