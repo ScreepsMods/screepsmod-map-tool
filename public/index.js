@@ -32,7 +32,12 @@ const C = {
   TERRAIN_MASK_SWAMP: 2,
   TERRAIN_MASK_LAVA: 4,
   SOURCE_ENERGY_NEUTRAL_CAPACITY: 1500,
-  ENERGY_REGEN_TIME: 300
+  ENERGY_REGEN_TIME: 300,
+
+  RESOURCE_SILICON: 'silicon',
+  RESOURCE_METAL: 'metal',
+  RESOURCE_BIOMASS: 'biomass',
+  RESOURCE_MIST: 'mist',
 }
 
 const common = {
@@ -807,6 +812,7 @@ function generateRoom (roomName, opts) {
         objects,
         opts,
         sourceKeepers: opts.keeperLairs,
+        depositType: opts.depositType,
         bus: !opts.sources && !opts.mineral
       }
     }

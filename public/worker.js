@@ -18,6 +18,8 @@ addEventListener('message', msg => {
     let normal = !sk && !center && !hall
     let type = normal ? 'normal' : (sk ? 'sk' : (center ? 'center' : 'hall'))
     let opts = {}
+    const depositTypes = [C.RESOURCE_SILICON, C.RESOURCE_METAL, C.RESOURCE_BIOMASS, C.RESOURCE_MIST];
+    const [, lon, lat] = msg.data.room.match(/^[WE](\d+)[NS](\d+)$/)
     let map = {
       normal: {
         controller: true
@@ -36,7 +38,8 @@ addEventListener('message', msg => {
         mineral: false,
         terrainType: Math.floor(Math.random() * 2) + 1,
         swampType: 0,
-        sources: 0
+        sources: 0,
+        depositType: depositTypes[(lon + lat) % 4],
       }
     }
     opts = map[type]
