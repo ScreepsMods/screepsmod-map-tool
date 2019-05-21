@@ -407,7 +407,7 @@ function generateRoom (roomName, opts) {
         return [-1, -1]
       }
     }
-    while (!terrain[y][x].wall || !passNearby || lairNearby)
+    while (!terrain[y][x].wall || terrain[y][x].source || !passNearby || lairNearby)
 
     return [x, y]
   }
@@ -642,7 +642,7 @@ function generateRoom (roomName, opts) {
           }
         }
       }
-      while (!terrain[y][x].wall || !passNearby || terrain[y][x].source || terrain[y][x].keeperLair)
+      while (!terrain[y][x].wall || !passNearby || terrain[y][x].source || terrain[y][x].mineral || terrain[y][x].keeperLair)
       terrain[y][x].controller = true
     }
 
