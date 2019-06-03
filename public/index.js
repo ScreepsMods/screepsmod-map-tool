@@ -130,9 +130,9 @@ const utils = {
 
     for (var y = 0; y < height; y++) {
       if (zoomIn) {
-        colors[y * 3] = {}
-        colors[y * 3 + 1] = {}
-        colors[y * 3 + 2] = {}
+        for (let i = 0; i < zoomIn; i++) {
+          colors[y * zoomIn + i] = {}
+        }
       } else {
         colors[y] = {}
       }
@@ -148,9 +148,9 @@ const utils = {
           color = [43, 43, 43]
         }
         if (zoomIn) {
-          for (var dx = 0; dx < 3; dx++) {
-            for (var dy = 0; dy < 3; dy++) {
-              colors[y * 3 + dy][x * 3 + dx] = color
+          for (var dx = 0; dx < zoomIn; dx++) {
+            for (var dy = 0; dy < zoomIn; dy++) {
+              colors[y * zoomIn + dy][x * zoomIn + dx] = color
             }
           }
         } else {
@@ -163,7 +163,7 @@ const utils = {
   },
   writeTerrainToPng (terrain, zoomIn) {
     var colors = this.createTerrainColorsMap(terrain, zoomIn)
-    return this.writePng(colors, 50 * (zoomIn ? 3 : 1), 50 * (zoomIn ? 3 : 1))
+    return this.writePng(colors, 50 * zoomIn, 50 * zoomIn)
   }
 }
 

@@ -6,16 +6,14 @@
 		<script src="lodash.min.js" async></script>
 		<script src="async.min.js" async></script>
 		<script src="q.js" async></script>
-		<script src="index.js" defer async></script>
-		<script src="renderer.js" defer async></script>
+		<script src="index.js"></script>
+		<script src="renderer.js" defer></script>
 		<script src="floodfill.min.js" defer></script>
 		<link rel="stylesheet" type="text/css" href="index.css">
 	</head>
 	<body>
 		<canvas id="canvas"></canvas>
 		<div class="controlpanel">
-			<button onclick="scale=1">Zoom Out</button>
-			<button onclick="scale=3">Zoom In</button>
 			<button onclick="save()">Save</button>
 			<button onclick="save(true)">Save Active</button>
 			<button onclick="generateSolidWall()">Generate Walls</button>

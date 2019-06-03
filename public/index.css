@@ -15,6 +15,10 @@ canvas {
 	position: fixed;
 	left: 0;	
 	bottom: 0;
+	background-color: gray;
+	padding: 0px 5px;
+	border-radius: 5px;
+	padding-bottom: 5px;
 }
 
 #output {

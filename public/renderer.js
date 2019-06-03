@@ -9,7 +9,7 @@ let generateOptions = {
 
 let mp = { x: 0, y: 0 }
 let mb = { left: false, right: false }
-let vp = { x: 0, y: 0 }
+let vp = { x: 0, y: 0, z: 1 }
 
 let scale = 1
 let flood = false
@@ -31,6 +31,7 @@ function prefetch () {
         })
         window.terrain.push(window.terrainCache[room])
       })
+      console.log('Rooms loaded')
     })
 }
 
@@ -50,6 +51,36 @@ function previewTypes () {
   }
   proc()
 }
+
+canvas.addEventListener('mousewheel', e => {
+  const oldScale = scale
+  if (e.deltaY > 0 && scale > 1) scale--
+  if (e.deltaY < 0 && scale < 8) scale++
+  if (oldScale !== scale) {
+    mp = { x: e.clientX, y: e.clientY }
+    let [x, y] = [-vp.x, -vp.y]
+    x += mp.x
+    y += mp.y
+    x /= oldScale
+    y /= oldScale
+    x *= scale
+    y *= scale
+    x -= mp.x
+    y -= mp.y
+    vp.x = -x
+    vp.y = -y
+  }
+  // if (mb.left) {
+  //   let { x, y, ovp } = mb.left
+  //   let dx = mp.x - x
+  //   let dy = mp.y - y
+  //   if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+  //     vp.x = ovp.x + dx
+  //     vp.y = ovp.y + dy
+  //     mb.left.drag = true
+  //   }
+  // }
+})
 
 canvas.addEventListener('mousemove', e => {
   mp = { x: e.clientX, y: e.clientY }
@@ -113,6 +144,17 @@ window.oncontextmenu = function (event) {
 
 let cell = {}
 
+function isInView (x, y, w, h) {
+  const canvas = document.getElementById('canvas')
+  const l1 = { x, y }
+  const r1 = { x: x + w, y: y + h }
+  const l2 = { x: -vp.x, y: -vp.y }
+  const r2 = { x: -vp.x + canvas.width, y: -vp.y + canvas.height }
+  if (l1.x > r2.x || l2.x > r1.x) return false
+  if (l1.y > r2.y || l2.y > r1.y) return false
+  return true
+}
+
 function render () {
   let canvas = document.getElementById('canvas')
   let ctx = canvas.getContext('2d')
@@ -126,6 +168,9 @@ function render () {
   //   renderTerrain(ctx, room)
   // })
   terrain.forEach(room => {
+    if (!isInView(room.x * 50 * scale, room.y * 50 * scale, 50 * scale, 50 * scale)) {
+      return //console.log('skipped', room)
+    }
     renderRoom(ctx, room)
   })
   if (flood) {
@@ -189,7 +234,7 @@ function render () {
 let imageCache = {}
 function renderRoom (ctx, room) {
   if (!room.terrain) return
-  let img = imageCache[room.terrain + scale] = imageCache[room.terrain + scale] || utils.writeTerrainToPng(room.terrain, scale >= 3)
+  let img = imageCache[room.terrain + scale] = imageCache[room.terrain + scale] || utils.writeTerrainToPng(room.terrain, scale)
   let rx = room.x * 50 * scale
   let ry = room.y * 50 * scale
   ctx.putImageData(img, vp.x + rx, vp.y + ry)
@@ -216,21 +261,22 @@ function renderRoom (ctx, room) {
     ctx.restore()
     return
   }
+  let mineral = ''
+  let colors = {
+    source: 'yellow',
+    keeperLair: 'red',
+    mineral: 'gray',
+    controller: 'lightGray',
+    L: ['#3F6147', '#89F4A5'],
+    U: ['#1B617F', '#88D6F7'],
+    K: ['#331A80', '#9370FF'],
+    Z: ['#594D33', '#F2D28B'],
+    X: ['#4F2626', '#FF7A7A'],
+    H: ['#4D4D4D', '#CCCCCC'],
+    O: ['#4D4D4D', '#CCCCCC']
+  }
   room.objects.forEach(o => {
     ctx.save()
-    let colors = {
-      source: 'yellow',
-      keeperLair: 'red',
-      mineral: 'gray',
-      controller: 'lightGray',
-      L: ['#3F6147', '#89F4A5'],
-      U: ['#1B617F', '#88D6F7'],
-      K: ['#331A80', '#9370FF'],
-      Z: ['#594D33', '#F2D28B'],
-      X: ['#4F2626', '#FF7A7A'],
-      H: ['#4D4D4D', '#CCCCCC'],
-      O: ['#4D4D4D', '#CCCCCC']
-    }
     let x = rx + (o.x * scale)
     let y = ry + (o.y * scale)
     ctx.beginPath()
@@ -238,21 +284,32 @@ function renderRoom (ctx, room) {
     ctx.fillStyle = colors[o.type] || 'blue'
     ctx.fill()
     if (o.type === 'mineral') {
-      let [primary, secondary] = colors[o.mineralType].map(c => hexToRGB(c, 0.6))
+      mineral = o.mineralType
+    }
+    ctx.restore()
+  })
+  if (mineral) {
+    if (!imageCache[mineral + scale]) {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      canvas.width = 50 * scale
+      canvas.height = 50 * scale
+      let [primary, secondary] = colors[mineral].map(c => hexToRGB(c, 0.6))
       ctx.beginPath()
-      ctx.arc(rx + (25 * scale), ry + (25 * scale), 10 * scale, 0, Math.PI * 2)
+      ctx.arc(25 * scale, 25 * scale, 10 * scale, 0, Math.PI * 2)
       ctx.fillStyle = primary
       ctx.fill()
       ctx.strokeStyle = secondary
       ctx.lineWidth = 2 * scale
       ctx.stroke()
       ctx.font = `${scale * 16}px Roboto`
-      let off = ctx.measureText(o.mineralType)
+      let off = ctx.measureText(mineral)
       ctx.fillStyle = secondary
-      ctx.fillText(o.mineralType, rx + (25 * scale) - (off.width / 2), ry + (25 * scale) + (scale * 6))
+      ctx.fillText(mineral, (25 * scale) - (off.width / 2), (25 * scale) + (scale * 6))
+      imageCache[mineral + scale] = canvas
     }
-    ctx.restore()
-  })
+    ctx.drawImage(imageCache[mineral + scale], rx, ry)
+  }
 }
 function hexToRGB (hex, opacity = 1) {
   let v = parseInt(hex.slice(1), 16)
