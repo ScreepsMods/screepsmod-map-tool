@@ -7,6 +7,10 @@ URL: http://yourServerIP:21025/maptool/
 The default username is admin,
 password is auto-generated at each server launch if not set in `.screepsrc`
 
+## Tools
+
+### Generation
+
 Left click to generate a room
 Right click to remove a room
 
@@ -15,6 +19,13 @@ Ctrl+Right Click to remove a sector (Fills with solid rooms)
 
 Middle clicking will flood fill from the cursor's position, 
 this is useful to find isolated rooms
+
+### Editor
+
+Left click sets cell to wall
+Right click sets to plain
+Middle click sets to swamp
+
 
 `Save` saves the generated rooms as `out of bounds`
 `Save Active` is the same as save, except rooms are set to `normal`

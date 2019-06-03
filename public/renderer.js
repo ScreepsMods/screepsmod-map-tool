@@ -15,6 +15,11 @@ let scale = 1
 let flood = false
 
 let overlay = ''
+let currentTool = 'gen'
+
+function getTool () {
+  return tools[currentTool]
+}
 
 prefetch()
 function prefetch () {
@@ -83,7 +88,14 @@ canvas.addEventListener('mousewheel', e => {
 })
 
 canvas.addEventListener('mousemove', e => {
-  mp = { x: e.clientX, y: e.clientY }
+  let [ x, y ] = [e.clientX, e.clientY]
+  x -= vp.x
+  y -= vp.y
+  if (x < 0) x -= 50 * scale
+  if (y < 0) y -= 50 * scale
+  let ry = Math.floor((y / scale) % 50)
+  let rx = Math.floor((x / scale) % 50)
+  mp = { x: e.clientX, y: e.clientY, rx, ry }
   if (mb.left) {
     let { x, y, ovp } = mb.left
     let dx = mp.x - x
@@ -104,6 +116,44 @@ canvas.addEventListener('mousedown', e => {
   mb[btn] = { x, y, ovp: Object.assign({}, vp) }
 })
 
+const tools = {
+  gen: [
+    { key: 'left', action: ({ room }) => gen(room) },
+    { key: 'ctrl+left', action: ({ room }) => generateSector(room) },
+    {
+      key: 'middle',
+      action: ({ e }) => {
+        flood = flood ? false : { x: e.clientX, y: e.clientY }
+      }
+    },
+    { 
+      key: 'right', 
+      action: ({ room }) => {
+        terrainCache[room] = null
+        let ind = terrain.findIndex(r => r.room === room)
+        if (~ind) terrain.splice(ind, 1)
+      }
+    },
+    { key: 'ctrl+right', action: ({ room }) => deleteSector(room) }
+  ],
+  edit: [
+    { key: 'left', action: ({ room, x, y }) => editTerrain(room, x, y, 'wall') },
+    { key: 'middle', action: ({ room, x, y }) => editTerrain(room, x, y, 'swamp') },
+    { key: 'right', action: ({ room, x, y }) => editTerrain(room, x, y, 'plain') }
+  ]
+}
+
+function editTerrain (room, x, y, type) {
+  const map = ['plain', 'wall', 'swamp']
+  type = map.indexOf(type)
+  const r = terrain.find(r => r.name === room)
+  const ind = x + (y * 50)
+  const part1 = r.terrain.slice(0, ind)
+  const part2 = r.terrain.slice(ind + 1)
+  r.terrain = terrainCache[room].terrain = part1 + type + part2
+  r.remote = false
+}
+
 canvas.addEventListener('mouseup', e => {
   let room = utils.roomNameFromXY(cell.x, cell.y)
   let btns = ['left', 'middle', 'right']
@@ -112,24 +162,23 @@ canvas.addEventListener('mouseup', e => {
   let { drag } = mb[btn]
   mb[btn] = {}
   if (drag) return
-  if (btn == 'left') {
-    if (ctrlKey) {
-      generateSector(room)
-    } else {
-      gen(room)
-    }
-  }
-  if (btn == 'middle') {
-    flood = flood ? false : { x: e.clientX, y: e.clientY }
-    console.log('flood', flood)
-  }
-  if (btn == 'right') {
-    if (ctrlKey) {
-      deleteSector(room)
-    } else {
-      terrainCache[room] = null
-      let ind = terrain.findIndex(r => r.room == room)
-      if (~ind) terrain.splice(ind, 1)
+  const keys = []
+  if (ctrlKey) keys.unshift('ctrl')
+  if (shiftKey) keys.unshift('shift')
+  if (altKey) keys.unshift('alt')
+  if (metaKey) keys.unshift('meta')
+  keys.push(btn)
+  const key = keys.join('+')
+  const tool = getTool()
+  if (tool) {
+    const { action } = tool.find(t => t.key === key) || {}
+    if (action) {
+      action({
+        room,
+        x: mp.rx,
+        y: mp.ry,
+        e
+      })
     }
   }
   e.preventDefault()
@@ -164,12 +213,9 @@ function render () {
   ctx.fillStyle = '#555'
   ctx.fill()
   ctx.translate(vp.x, vp.y)
-  // terrain.forEach(room => {
-  //   renderTerrain(ctx, room)
-  // })
   terrain.forEach(room => {
     if (!isInView(room.x * 50 * scale, room.y * 50 * scale, 50 * scale, 50 * scale)) {
-      return //console.log('skipped', room)
+      return // console.log('skipped', room)
     }
     renderRoom(ctx, room)
   })
@@ -211,14 +257,36 @@ function render () {
     ctx.save()
     ctx.translate(mp.x, mp.y)
     ctx.beginPath()
-    ctx.rect(0, 0, 75, 60)
+    ctx.rect(0, 0, 75, 80)
     ctx.fillStyle = '#333333'
     ctx.fill()
     ctx.font = '20px Roboto'
     ctx.fillStyle = 'white'
     ctx.fillText(cell.room, 5, 25)
     ctx.fillText(`(${cell.x},${cell.y})`, 5, 45)
-    let room = terrain.find(t => t.room == cell.room)
+    let { x, y } = mp
+    x -= vp.x
+    y -= vp.y
+    if (x < 0) x -= 50 * scale
+    if (y < 0) y -= 50 * scale
+    let rx = Math.floor((x / scale) % 50)
+    let ry = Math.floor((y / scale) % 50)
+    ctx.fillText(`(${rx},${ry})`, 5, 65)
+    ctx.restore()
+  }
+  if (currentTool === 'edit') {
+    ctx.save()
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'
+    let [x, y] = [mp.x, mp.y]
+    x -= vp.x
+    y -= vp.y
+    x = Math.floor(x - (x % scale))
+    y = Math.floor(y - (y % scale))
+    x += vp.x
+    y += vp.y
+    ctx.beginPath()
+    ctx.rect(x, y, scale, scale)
+    ctx.fill()
     ctx.restore()
   }
   if (overlay) {
@@ -226,7 +294,7 @@ function render () {
     ctx.font = `32px Roboto`
     ctx.fillStyle = 'red'
     ctx.fillText(overlay, 10, 50)
-    //const { width } = ctx.measureText(overlay)
+    // const { width } = ctx.measureText(overlay)
     ctx.restore()
   }
 }

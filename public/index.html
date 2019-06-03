@@ -25,6 +25,12 @@
 			<button onclick="autoGen(2,2)">Auto Gen (2x2)</button>
 			<button onclick="autoGen(4,2)">Auto Gen (4x2)</button>
 			<button onclick="autoGen(4,4)">Auto Gen (4x4)</button>
+			<label>
+				<select oninput="currentTool = this.value">
+					<option value="gen">Generation</option>
+					<option value="edit">Editor</option>
+				</select>
+			</label>
 		</div>
 		<textarea id="output"></textarea>
 	</body>
