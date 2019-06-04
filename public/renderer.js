@@ -93,8 +93,8 @@ canvas.addEventListener('mousemove', e => {
   y -= vp.y
   if (x < 0) x -= 50 * scale
   if (y < 0) y -= 50 * scale
-  let ry = Math.floor((y / scale) % 50)
   let rx = Math.floor((x / scale) % 50)
+  let ry = Math.floor((y / scale) % 50)
   mp = { x: e.clientX, y: e.clientY, rx, ry }
   if (mb.left) {
     let { x, y, ovp } = mb.left
@@ -269,21 +269,22 @@ function render () {
     y -= vp.y
     if (x < 0) x -= 50 * scale
     if (y < 0) y -= 50 * scale
-    let rx = Math.floor((x / scale) % 50)
-    let ry = Math.floor((y / scale) % 50)
+    let rx = (50 + Math.floor((x / scale) % 50)) % 50
+    let ry = (50 + Math.floor((y / scale) % 50)) % 50
     ctx.fillText(`(${rx},${ry})`, 5, 65)
     ctx.restore()
   }
   if (currentTool === 'edit') {
     ctx.save()
+    ctx.translate(vp.x, vp.y)
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'
-    let [x, y] = [mp.x, mp.y]
-    x -= vp.x
-    y -= vp.y
-    x = Math.floor(x - (x % scale))
-    y = Math.floor(y - (y % scale))
-    x += vp.x
-    y += vp.y
+    let [xo, yo] = [
+      Math.floor(Math.abs(vp.x % scale)),
+      Math.floor(Math.abs(vp.y % scale))
+    ]
+    
+    let x = (mp.rx * scale) + (cell.x * scale) // (mp.x + xo)
+    let y = (mp.ry * scale) + (cell.y * scale) // (mp.y + yo)
     ctx.beginPath()
     ctx.rect(x, y, scale, scale)
     ctx.fill()
