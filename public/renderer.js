@@ -740,3 +740,100 @@ async function autoGen(sizex, sizey) {
 //     return o
 //   }).filter(o => o)
 // })
+
+function getExits (room) {
+  const ret = {
+    top: '',
+    bottom: '',
+    left: '',
+    right: ''
+  }
+  const t = room.length === 2500 ? room : terrain.find(r => r.room === room).terrain
+  for (let i = 0; i < 50; i++) {
+    ret.top += t[i]
+    ret.bottom += t[(50 * 49) + i]
+    ret.left += t[i * 50]
+    ret.right += t[(i * 50) + 49]
+  }
+  ret.top = ret.top.replace(/2/g, '0').replace(/3/g, '1')
+  ret.bottom = ret.bottom.replace(/2/g, '0').replace(/3/g, '1')
+  ret.left = ret.left.replace(/2/g, '0').replace(/3/g, '1')
+  ret.right = ret.right.replace(/2/g, '0').replace(/3/g, '1')
+  return ret
+}
+
+async function fixExits () {
+  const found = new Set()
+  const wall = '1'.repeat(2500)
+  const ps = []
+  for (const room of terrain) {
+    if (room.terrain === wall) continue
+    if (found.has(room.room)) continue
+    const exits = getExits(room.terrain)
+    const { x, y } = room
+    const offs = [
+      ['left', 'right', -1, 0],
+      ['right', 'left', 1, 0],
+      ['top', 'bottom', 0, -1],
+      ['bottom', 'top', 0, 1]
+    ]
+    const forceGen = new Set()
+    for (const [dir, rdir, xo, yo] of offs) {
+      const r = terrain.find(r => r.x === (x + xo) && r.y === (y + yo))
+      if (r && r.terrain !== wall && !found.has(r)) {
+        const nexits = getExits(r.terrain)
+        if (exits[dir] !== nexits[rdir]) {
+          console.log(`Found mismatch:\n  ${dir} ${room.room} ${exits[dir]}\n  ${rdir} ${r.room} ${nexits[rdir]}`)
+          // forceGen.add(room.room)
+          forceGen.add(r.room)
+          found.add(room.room)
+          found.add(r.room)
+        }
+      }
+    }
+    for (const r of forceGen) {
+      delete terrainCache[r]
+    }
+    ps.push((async () => {
+      for (const r of forceGen) {
+        await gen(r)
+      }
+    })())
+  }
+  console.log(`Found ${found.size} rooms with mismatched exits`)
+  await Promise.all(ps)
+  if (found.size) await fixExits()
+}
+
+async function fixFloating () {
+  const rooms = terrain.filter(r => {
+    const obj = r.objects.find(o => r.terrain[o.x + (o.y * 50)] != '1' && ['controller', 'mineral', 'source', 'keeperLair'].includes(o.type))
+    return !!obj
+  })
+  console.log(`Found ${rooms.length} rooms with unsupported structures`)
+  await Promise.all(rooms.map(r => gen(r.room)))
+}
+
+async function fixDups () {
+  const rooms = terrain
+    .filter(r => {
+      const types = _.groupBy(r.objects, 'type')
+      if (types.controller && types.controller.length > 1) return true
+      if (types.mineral && types.mineral.length > 1) return true
+      if (types.source && types.source.length > (types.controller ? 2 : 3)) return true
+      if (types.keeperLair && types.keeperLair.length > 4) return true
+      return false
+    })
+  await Promise.all(rooms.map(r => gen(r.room)))
+  console.log(`Found ${rooms.length} rooms with too many objects`)
+}
+
+async function fixAll () {
+  for (const room of terrain) {
+    room.terrain = room.terrain.replace(/3/g, '1')
+  }
+  await fixFloating()
+  await fixDups()
+  await fixExits()
+  console.log(`All rooms fixed. Run Save active to apply.`)
+}
