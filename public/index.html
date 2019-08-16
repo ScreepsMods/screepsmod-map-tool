@@ -14,9 +14,10 @@
 	<body>
 		<canvas id="canvas"></canvas>
 		<div class="controlpanel">
-			<button onclick="save()">Save</button>
-			<button onclick="save(true)">Save Active</button>
+			<button onclick="save()">Save Closed</button>
+			<button onclick="save(true)">Save Open</button>
 			<button onclick="generateSolidWall()">Generate Walls</button>
+			<button onclick="fixAll()">Fix All Rooms</button>
 			<input type="range" name="wallChance" value="25" min="0" max="100" step="10" oninput="this.title=this.value + '%'">
 			<label>
 				<input type="checkbox" id="showWalls">

@@ -829,11 +829,13 @@ async function fixDups () {
 }
 
 async function fixAll () {
+  if (!confirm('Warning: Fix All is a destructive process. Rooms will be forcibly regenerated. Are you sure you want to continue?')) return
   for (const room of terrain) {
     room.terrain = room.terrain.replace(/3/g, '1')
   }
   await fixFloating()
   await fixDups()
   await fixExits()
-  console.log(`All rooms fixed. Run Save active to apply.`)
+  console.log(`All rooms fixed. Run save to apply.`)
+  alert(`All rooms fixed. Run save to apply.`)
 }
