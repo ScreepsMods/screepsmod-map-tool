@@ -264,15 +264,19 @@ function generateRoom (roomName, opts) {
       if (neighbor) {
         exits[dir] = _exitsArray(neighbor.terrain, x, y)
       } else {
-        let sk = !!roomName.match(/^[EW]\d*[4-6][NS]\d*[4-6]$/)
+        let sk = !!roomName.match(/^[EW]\d*[4-6][NS]\d*[4-6]$/)        
+        let [_x, _y] = utils.roomNameToXY(roomName)
         let hallx = !!roomName.match(/^[EW]\d*[NS]\d*0$/)
-        let hally = !!roomName.match(/^[EW]\d*0[NS]\d*$/)
-        let [x, y] = utils.roomNameToXY(roomName)
-        let val = Math.random() > (wallChance || 0.3)
+        let hally = !!roomName.match(/^[EW]\d*0[NS]\d*$/)        
+        let val = Math.random() > 0.3
         val |= sk
+        val |= (dir == 'bottom') && !!utils.roomNameFromXY(_x, _y + 1).match(/^[EW]\d*[4-6][NS]\d*[4-6]$/)
+        val |= (dir == 'top') && !!utils.roomNameFromXY(_x, _y - 1).match(/^[EW]\d*[4-6][NS]\d*[4-6]$/)
+        val |= (dir == 'right') && !!utils.roomNameFromXY(_x + 1, _y).match(/^[EW]\d*[4-6][NS]\d*[4-6]$/)
+        val |= (dir == 'left') && !!utils.roomNameFromXY(_x - 1, _y).match(/^[EW]\d*[4-6][NS]\d*[4-6]$/)        
         val |= (dir == 'left' || dir == 'right') && hallx
         val |= (dir == 'top' || dir == 'bottom') && hally
-        exits[dir] = val ? _genExit() : []
+        exits[dir] = val ? _genExit() : []        
       }
       return true
     }
@@ -376,7 +380,7 @@ function generateRoom (roomName, opts) {
       randomIndex = Math.floor(Math.random() * availablePlacements.length);
       x = Math.floor(Math.random() * (availablePlacements[randomIndex].xMax - availablePlacements[randomIndex].xMin)) + availablePlacements[randomIndex].xMin
       y = Math.floor(Math.random() * (availablePlacements[randomIndex].yMax - availablePlacements[randomIndex].yMin)) + availablePlacements[randomIndex].yMin
-      
+
       var passNearby = false
       for (var dx = -1; dx <= 1; dx++) {
         for (var dy = -1; dy <= 1; dy++) {
