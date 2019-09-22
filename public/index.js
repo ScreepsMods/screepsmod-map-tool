@@ -365,16 +365,18 @@ function generateRoom (roomName, opts) {
     return newTerrain
   }
 
-  function _findSourceSpot (terrain) {
+  function _findSourceSpot (terrain, availablePlacements) {
     var x, y
     var tries = 0
+    var randomIndex
 
     do {
       tries++
 
-      x = Math.floor(Math.random() * 44) + 3
-      y = Math.floor(Math.random() * 44) + 3
-
+      randomIndex = Math.floor(Math.random() * availablePlacements.length);
+      x = Math.floor(Math.random() * (availablePlacements[randomIndex].xMax - availablePlacements[randomIndex].xMin)) + availablePlacements[randomIndex].xMin
+      y = Math.floor(Math.random() * (availablePlacements[randomIndex].yMax - availablePlacements[randomIndex].yMin)) + availablePlacements[randomIndex].yMin
+      
       var passNearby = false
       for (var dx = -1; dx <= 1; dx++) {
         for (var dy = -1; dy <= 1; dy++) {
@@ -388,27 +390,16 @@ function generateRoom (roomName, opts) {
         }
       }
 
-      var lairNearby = false
-      if (passNearby) {
-        for (var dx = -5; dx <= 5; dx++) {
-          for (var dy = -5; dy <= 5; dy++) {
-            if (x + dx < 0 || y + dy < 0 || x + dx > 49 || y + dy > 49) {
-              continue
-            }
-            if (terrain[y + dy][x + dx].keeperLair) {
-              lairNearby = true
-              break
-            }
-          }
-        }
-      }
-
       if (tries > 1000) {
         return [-1, -1]
       }
     }
-    while (!terrain[y][x].wall || terrain[y][x].source || !passNearby || lairNearby)
+    while (!terrain[y][x].wall || terrain[y][x].source || !passNearby)
 
+    
+    if (availablePlacements.length > 1) {
+      availablePlacements.splice(randomIndex, 1);
+    }
     return [x, y]
   }
 
@@ -583,9 +574,19 @@ function generateRoom (roomName, opts) {
         terrain = _smoothTerrain(terrain, swampTypes[swampType].factor, 'swamp')
       }
     }
+    
+    var availablePlacements = [];
+    if (keeperLair) {
+      availablePlacements.push({xMin: 2, xMax: 19, yMin: 2, yMax: 19})
+      availablePlacements.push({xMin: 29, xMax: 47, yMin: 2, yMax: 19})
+      availablePlacements.push({xMin: 2, xMax: 19, yMin: 29, yMax: 47})
+      availablePlacements.push({xMin: 29, xMax: 47, yMin: 29, yMax: 47})      
+    } else {
+      availablePlacements.push({xMin: 2, xMax: 47, yMin: 2, yMax: 47}) 
+    }
 
     for (var i = 0; i < sources; i++) {
-      let [x, y] = _findSourceSpot(terrain)
+      let [x, y] = _findSourceSpot(terrain, availablePlacements)
 
       if (x == -1 && y == -1) {
         return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral)
@@ -605,7 +606,7 @@ function generateRoom (roomName, opts) {
     }
 
     if (true) { // mineral
-      let [x, y] = _findSourceSpot(terrain)
+      let [x, y] = _findSourceSpot(terrain, availablePlacements)
 
       if (x == -1 && y == -1) {
         return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral)
