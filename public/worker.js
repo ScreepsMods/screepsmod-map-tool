@@ -41,6 +41,7 @@ addEventListener('message', msg => {
       }
     }
     opts = map[type]
+    opts.type = type
     opts.wallChance = msg.data.wallChance
     generateRoom(msg.data.room, opts).then(room => {
       if (sk || center) {
