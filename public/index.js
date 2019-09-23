@@ -239,7 +239,7 @@ function generateRoom (roomName, opts) {
     return exit
   }
 
-  function _matchExitWithNeighbors (exits, dir, neighbor) {
+  function _matchExitWithNeighbors (exits, dir, neighbor, wallChance) {
     var x, y
     if (dir == 'top') {
       y = 49
@@ -268,7 +268,7 @@ function generateRoom (roomName, opts) {
         let [_x, _y] = utils.roomNameToXY(roomName)
         let hallx = !!roomName.match(/^[EW]\d*[NS]\d*0$/)
         let hally = !!roomName.match(/^[EW]\d*0[NS]\d*$/)        
-        let val = Math.random() > 0.3
+        let val = Math.random() > (wallChance || 0.3)
         val |= sk
         val |= (dir == 'bottom') && !!utils.roomNameFromXY(_x, _y + 1).match(/^[EW]\d*[4-6][NS]\d*[4-6]$/)
         val |= (dir == 'top') && !!utils.roomNameFromXY(_x, _y - 1).match(/^[EW]\d*[4-6][NS]\d*[4-6]$/)
@@ -465,7 +465,7 @@ function generateRoom (roomName, opts) {
     return [-1, -1]
   }
 
-  function _genTerrain (wallType, swampType, exits, sources, controller, keeperLair, mineral) {
+  function _genTerrain (wallType, swampType, exits, sources, controller, keeperLair, mineral, type) {
     var types = {
       1: { fill: 0.4, smooth: 10, factor: 5 },
       2: { fill: 0.2, smooth: 20, factor: 4 },
@@ -580,7 +580,7 @@ function generateRoom (roomName, opts) {
     }
     
     var availablePlacements = [];
-    if (keeperLair) {
+    if (type == 'sk' || type == 'center') {
       availablePlacements.push({xMin: 2, xMax: 19, yMin: 2, yMax: 19})
       availablePlacements.push({xMin: 29, xMax: 47, yMin: 2, yMax: 19})
       availablePlacements.push({xMin: 2, xMax: 19, yMin: 29, yMax: 47})
@@ -593,7 +593,7 @@ function generateRoom (roomName, opts) {
       let [x, y] = _findSourceSpot(terrain, availablePlacements)
 
       if (x == -1 && y == -1) {
-        return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral)
+        return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral, type)
       }
 
       terrain[y][x].source = true
@@ -602,7 +602,7 @@ function generateRoom (roomName, opts) {
         [x, y] = _findKeeperLairSpot(terrain, x, y)
 
         if (x == -1 && y == -1) {
-          return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral)
+          return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral, type)
         }
 
         terrain[y][x].keeperLair = true
@@ -613,7 +613,7 @@ function generateRoom (roomName, opts) {
       let [x, y] = _findSourceSpot(terrain, availablePlacements)
 
       if (x == -1 && y == -1) {
-        return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral)
+        return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral, type)
       }
 
       terrain[y][x].mineral = true
@@ -622,7 +622,7 @@ function generateRoom (roomName, opts) {
         [x, y] = _findKeeperLairSpot(terrain, x, y)
 
         if (x == -1 && y == -1) {
-          return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral)
+          return _genTerrain(Math.floor(Math.random() * 27) + 1, swampType, exits, sources, controller, keeperLair, mineral, type)
         }
 
         terrain[y][x].keeperLair = true
@@ -662,19 +662,19 @@ function generateRoom (roomName, opts) {
     getTerrain(utils.roomNameFromXY(x - 1, y))
   ])
     .then(neighborRooms => {
-      if (!_matchExitWithNeighbors(opts.exits, 'top', neighborRooms[0])) {
+      if (!_matchExitWithNeighbors(opts.exits, 'top', neighborRooms[0], opts.wallChance)) {
         opts.exits.top = []
         // return q.reject(`Exits in room ${neighborRooms[0].room} don't match`);
       }
-      if (!_matchExitWithNeighbors(opts.exits, 'right', neighborRooms[1])) {
+      if (!_matchExitWithNeighbors(opts.exits, 'right', neighborRooms[1], opts.wallChance)) {
         opts.exits.right = []
         // return q.reject(`Exits in room ${neighborRooms[1].room} don't match`);
       }
-      if (!_matchExitWithNeighbors(opts.exits, 'bottom', neighborRooms[2])) {
+      if (!_matchExitWithNeighbors(opts.exits, 'bottom', neighborRooms[2], opts.wallChance)) {
         opts.exits.bottom = []
         // return q.reject(`Exits in room ${neighborRooms[2].room} don't match`);
       }
-      if (!_matchExitWithNeighbors(opts.exits, 'left', neighborRooms[3])) {
+      if (!_matchExitWithNeighbors(opts.exits, 'left', neighborRooms[3], opts.wallChance)) {
         opts.exits.left = []
         // return q.reject(`Exits in room ${neighborRooms[3].room} don't match`);
       }
@@ -700,7 +700,7 @@ function generateRoom (roomName, opts) {
         opts.keeperLairs = false
       }
 
-      var roomData = _genTerrain(opts.terrainType, opts.swampType, opts.exits, opts.sources, opts.controller, opts.keeperLairs, opts.mineral)
+      var roomData = _genTerrain(opts.terrainType, opts.swampType, opts.exits, opts.sources, opts.controller, opts.keeperLairs, opts.mineral, opts.type)
 
       var objects = []; var terrain = []; var x; var y; var sourceKeepers = false
 
