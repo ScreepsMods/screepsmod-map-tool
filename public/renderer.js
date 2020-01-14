@@ -517,6 +517,103 @@ function makeNovice () {
   })
 }
 
+function getSectorBoundsAllBus (roomInSector) {
+  let [x, y] = utils.roomNameToXY(roomInSector)
+  if (x < 0) x -= 9
+  if (y < 0) y -= 9
+  let sx = x - (x % 10)
+  let sy = y - (y % 10)
+  let start = { x: sx , y: sy }
+  let end = { x: sx + 10, y: sy + 10 }
+  if (x < 0 && y > -1) {
+      //wxsx
+      start.x -= 1
+      end.y += 1
+  } else if (x < 0 && y < 0) {
+      //wxnx
+      start.x -= 1
+      start.y -= 1
+  } else if (x > -1 && y < 0) {
+      //exnx
+      start.y -= 1
+      end.x += 1
+  } else {
+      //exsx
+      end.x += 1
+      end.y += 1
+  }
+  return { start, end }
+}
+
+function makeRespawnSectorWall (room, borderSide, decayTime) {
+  let x, y;
+  for (let i = 0; i < 50; i++) {
+      switch(borderSide) {
+          //borderSide is related to the sector side not the room side
+          case 'left':
+              x = 49;
+              y = i;
+              break;
+          case 'right':
+              x = 0;
+              y = i;
+              break;
+          case 'top':
+              x = i;
+              y = 49;
+              break;
+          case 'bottom':
+              x = i;
+              y = 0;
+              break;
+      }
+      if (x !== undefined && y !== undefined) {
+          room.objects.push({ type: 'constructedWall', room: room.room, x, y, decayTime: { timestamp: decayTime } });
+      }
+  }
+}
+
+function makeRespawnSector (roomInSector, openTime, decayTime) {
+  //default to opening in 1 minute
+  if (openTime === undefined) { openTime = Date.now() + (1 * 1000 * 60); }
+  //default to decaying in 7 days
+  if (decayTime === undefined) { 
+      decayTime = new Date();
+      decayTime.setDate(decayTime.getDate() + 7);
+      decayTime = decayTime.getTime();
+  }
+
+  let { start, end } = getSectorBoundsAllBus(roomInSector);
+
+  for (let x = start.x; x < end.x; x++) {
+      for (let y = start.y; y < end.y; y++) {
+
+          let room = terrain.find(r => r.x == x && r.y == y);
+          room.remote = false;
+          room.status = 'normal';
+
+          let [,hor,horx,ver,very] = room.name.match(/^(\w)(\d+)(\w)(\d+)$/);
+
+          if (horx % 10 == 0 || very % 10 == 0) {
+              room.bus = true;
+              if (x == start.x && y > start.y && y < (start.y + 10)) {
+                  makeRespawnSectorWall(room, 'left', decayTime);
+              } else if (x == (start.x + 10) && y > start.y && y < (start.y + 10)) {
+                  makeRespawnSectorWall(room, 'right', decayTime);
+              } else if ((y == start.y && x > start.x && x < (start.x + 10))) {
+                  makeRespawnSectorWall(room, 'top', decayTime);
+              } else if ((y == (start.y + 10) && x > start.x && x < (start.x + 10))) {
+                  makeRespawnSectorWall(room, 'bottom', decayTime);
+              }
+          } else {
+              room.respawnArea = decayTime;
+              room.openTime = openTime;
+          }
+
+      }
+  }
+}
+
 function findBounds () {
   const solidTerrain = '1'.repeat(2500)
   let start = { x: 100, y: 100 }
