@@ -9,12 +9,17 @@ let generateOptions = {
 
 let mp = { x: 0, y: 0 }
 let mb = { left: false, right: false }
-let vp = { x: 0, y: 0 }
+let vp = { x: 0, y: 0, z: 1 }
 
 let scale = 1
 let flood = false
 
 let overlay = ''
+let currentTool = 'gen'
+
+function getTool () {
+  return tools[currentTool]
+}
 
 prefetch()
 function prefetch () {
@@ -31,6 +36,7 @@ function prefetch () {
         })
         window.terrain.push(window.terrainCache[room])
       })
+      console.log('Rooms loaded')
     })
 }
 
@@ -51,8 +57,45 @@ function previewTypes () {
   proc()
 }
 
+canvas.addEventListener('mousewheel', e => {
+  const oldScale = scale
+  if (e.deltaY > 0 && scale > 1) scale--
+  if (e.deltaY < 0 && scale < 8) scale++
+  if (oldScale !== scale) {
+    mp = { x: e.clientX, y: e.clientY }
+    let [x, y] = [-vp.x, -vp.y]
+    x += mp.x
+    y += mp.y
+    x /= oldScale
+    y /= oldScale
+    x *= scale
+    y *= scale
+    x -= mp.x
+    y -= mp.y
+    vp.x = -x
+    vp.y = -y
+  }
+  // if (mb.left) {
+  //   let { x, y, ovp } = mb.left
+  //   let dx = mp.x - x
+  //   let dy = mp.y - y
+  //   if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+  //     vp.x = ovp.x + dx
+  //     vp.y = ovp.y + dy
+  //     mb.left.drag = true
+  //   }
+  // }
+})
+
 canvas.addEventListener('mousemove', e => {
-  mp = { x: e.clientX, y: e.clientY }
+  let [ x, y ] = [e.clientX, e.clientY]
+  x -= vp.x
+  y -= vp.y
+  if (x < 0) x -= 50 * scale
+  if (y < 0) y -= 50 * scale
+  let rx = Math.floor((x / scale) % 50)
+  let ry = Math.floor((y / scale) % 50)
+  mp = { x: e.clientX, y: e.clientY, rx, ry }
   if (mb.left) {
     let { x, y, ovp } = mb.left
     let dx = mp.x - x
@@ -73,6 +116,44 @@ canvas.addEventListener('mousedown', e => {
   mb[btn] = { x, y, ovp: Object.assign({}, vp) }
 })
 
+const tools = {
+  gen: [
+    { key: 'left', action: ({ room }) => gen(room) },
+    { key: 'ctrl+left', action: ({ room }) => generateSector(room) },
+    {
+      key: 'middle',
+      action: ({ e }) => {
+        flood = flood ? false : { x: e.clientX, y: e.clientY }
+      }
+    },
+    { 
+      key: 'right', 
+      action: ({ room }) => {
+        terrainCache[room] = null
+        let ind = terrain.findIndex(r => r.room === room)
+        if (~ind) terrain.splice(ind, 1)
+      }
+    },
+    { key: 'ctrl+right', action: ({ room }) => deleteSector(room) }
+  ],
+  edit: [
+    { key: 'left', action: ({ room, x, y }) => editTerrain(room, x, y, 'wall') },
+    { key: 'middle', action: ({ room, x, y }) => editTerrain(room, x, y, 'swamp') },
+    { key: 'right', action: ({ room, x, y }) => editTerrain(room, x, y, 'plain') }
+  ]
+}
+
+function editTerrain (room, x, y, type) {
+  const map = ['plain', 'wall', 'swamp']
+  type = map.indexOf(type)
+  const r = terrain.find(r => r.name === room)
+  const ind = x + (y * 50)
+  const part1 = r.terrain.slice(0, ind)
+  const part2 = r.terrain.slice(ind + 1)
+  r.terrain = terrainCache[room].terrain = part1 + type + part2
+  r.remote = false
+}
+
 canvas.addEventListener('mouseup', e => {
   let room = utils.roomNameFromXY(cell.x, cell.y)
   let btns = ['left', 'middle', 'right']
@@ -81,24 +162,23 @@ canvas.addEventListener('mouseup', e => {
   let { drag } = mb[btn]
   mb[btn] = {}
   if (drag) return
-  if (btn == 'left') {
-    if (ctrlKey) {
-      generateSector(room)
-    } else {
-      gen(room)
-    }
-  }
-  if (btn == 'middle') {
-    flood = flood ? false : { x: e.clientX, y: e.clientY }
-    console.log('flood', flood)
-  }
-  if (btn == 'right') {
-    if (ctrlKey) {
-      deleteSector(room)
-    } else {
-      terrainCache[room] = null
-      let ind = terrain.findIndex(r => r.room == room)
-      if (~ind) terrain.splice(ind, 1)
+  const keys = []
+  if (ctrlKey) keys.unshift('ctrl')
+  if (shiftKey) keys.unshift('shift')
+  if (altKey) keys.unshift('alt')
+  if (metaKey) keys.unshift('meta')
+  keys.push(btn)
+  const key = keys.join('+')
+  const tool = getTool()
+  if (tool) {
+    const { action } = tool.find(t => t.key === key) || {}
+    if (action) {
+      action({
+        room,
+        x: mp.rx,
+        y: mp.ry,
+        e
+      })
     }
   }
   e.preventDefault()
@@ -113,6 +193,17 @@ window.oncontextmenu = function (event) {
 
 let cell = {}
 
+function isInView (x, y, w, h) {
+  const canvas = document.getElementById('canvas')
+  const l1 = { x, y }
+  const r1 = { x: x + w, y: y + h }
+  const l2 = { x: -vp.x, y: -vp.y }
+  const r2 = { x: -vp.x + canvas.width, y: -vp.y + canvas.height }
+  if (l1.x > r2.x || l2.x > r1.x) return false
+  if (l1.y > r2.y || l2.y > r1.y) return false
+  return true
+}
+
 function render () {
   let canvas = document.getElementById('canvas')
   let ctx = canvas.getContext('2d')
@@ -122,10 +213,10 @@ function render () {
   ctx.fillStyle = '#555'
   ctx.fill()
   ctx.translate(vp.x, vp.y)
-  // terrain.forEach(room => {
-  //   renderTerrain(ctx, room)
-  // })
   terrain.forEach(room => {
+    if (!isInView(room.x * 50 * scale, room.y * 50 * scale, 50 * scale, 50 * scale)) {
+      return // console.log('skipped', room)
+    }
     renderRoom(ctx, room)
   })
   if (flood) {
@@ -166,14 +257,37 @@ function render () {
     ctx.save()
     ctx.translate(mp.x, mp.y)
     ctx.beginPath()
-    ctx.rect(0, 0, 75, 60)
+    ctx.rect(0, 0, 75, 80)
     ctx.fillStyle = '#333333'
     ctx.fill()
     ctx.font = '20px Roboto'
     ctx.fillStyle = 'white'
     ctx.fillText(cell.room, 5, 25)
     ctx.fillText(`(${cell.x},${cell.y})`, 5, 45)
-    let room = terrain.find(t => t.room == cell.room)
+    let { x, y } = mp
+    x -= vp.x
+    y -= vp.y
+    if (x < 0) x -= 50 * scale
+    if (y < 0) y -= 50 * scale
+    let rx = (50 + Math.floor((x / scale) % 50)) % 50
+    let ry = (50 + Math.floor((y / scale) % 50)) % 50
+    ctx.fillText(`(${rx},${ry})`, 5, 65)
+    ctx.restore()
+  }
+  if (currentTool === 'edit') {
+    ctx.save()
+    ctx.translate(vp.x, vp.y)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'
+    let [xo, yo] = [
+      Math.floor(Math.abs(vp.x % scale)),
+      Math.floor(Math.abs(vp.y % scale))
+    ]
+    
+    let x = (mp.rx * scale) + (cell.x * scale) // (mp.x + xo)
+    let y = (mp.ry * scale) + (cell.y * scale) // (mp.y + yo)
+    ctx.beginPath()
+    ctx.rect(x, y, scale, scale)
+    ctx.fill()
     ctx.restore()
   }
   if (overlay) {
@@ -181,7 +295,7 @@ function render () {
     ctx.font = `32px Roboto`
     ctx.fillStyle = 'red'
     ctx.fillText(overlay, 10, 50)
-    //const { width } = ctx.measureText(overlay)
+    // const { width } = ctx.measureText(overlay)
     ctx.restore()
   }
 }
@@ -189,7 +303,7 @@ function render () {
 let imageCache = {}
 function renderRoom (ctx, room) {
   if (!room.terrain) return
-  let img = imageCache[room.terrain + scale] = imageCache[room.terrain + scale] || utils.writeTerrainToPng(room.terrain, scale >= 3)
+  let img = imageCache[room.terrain + scale] = imageCache[room.terrain + scale] || utils.writeTerrainToPng(room.terrain, scale)
   let rx = room.x * 50 * scale
   let ry = room.y * 50 * scale
   ctx.putImageData(img, vp.x + rx, vp.y + ry)
@@ -216,21 +330,22 @@ function renderRoom (ctx, room) {
     ctx.restore()
     return
   }
+  let mineral = ''
+  let colors = {
+    source: 'yellow',
+    keeperLair: 'red',
+    mineral: 'gray',
+    controller: 'lightGray',
+    L: ['#3F6147', '#89F4A5'],
+    U: ['#1B617F', '#88D6F7'],
+    K: ['#331A80', '#9370FF'],
+    Z: ['#594D33', '#F2D28B'],
+    X: ['#4F2626', '#FF7A7A'],
+    H: ['#4D4D4D', '#CCCCCC'],
+    O: ['#4D4D4D', '#CCCCCC']
+  }
   room.objects.forEach(o => {
     ctx.save()
-    let colors = {
-      source: 'yellow',
-      keeperLair: 'red',
-      mineral: 'gray',
-      controller: 'lightGray',
-      L: ['#3F6147', '#89F4A5'],
-      U: ['#1B617F', '#88D6F7'],
-      K: ['#331A80', '#9370FF'],
-      Z: ['#594D33', '#F2D28B'],
-      X: ['#4F2626', '#FF7A7A'],
-      H: ['#4D4D4D', '#CCCCCC'],
-      O: ['#4D4D4D', '#CCCCCC']
-    }
     let x = rx + (o.x * scale)
     let y = ry + (o.y * scale)
     ctx.beginPath()
@@ -238,21 +353,32 @@ function renderRoom (ctx, room) {
     ctx.fillStyle = colors[o.type] || 'blue'
     ctx.fill()
     if (o.type === 'mineral') {
-      let [primary, secondary] = colors[o.mineralType].map(c => hexToRGB(c, 0.6))
+      mineral = o.mineralType
+    }
+    ctx.restore()
+  })
+  if (mineral) {
+    if (!imageCache[mineral + scale]) {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      canvas.width = 50 * scale
+      canvas.height = 50 * scale
+      let [primary, secondary] = colors[mineral].map(c => hexToRGB(c, 0.6))
       ctx.beginPath()
-      ctx.arc(rx + (25 * scale), ry + (25 * scale), 10 * scale, 0, Math.PI * 2)
+      ctx.arc(25 * scale, 25 * scale, 10 * scale, 0, Math.PI * 2)
       ctx.fillStyle = primary
       ctx.fill()
       ctx.strokeStyle = secondary
       ctx.lineWidth = 2 * scale
       ctx.stroke()
       ctx.font = `${scale * 16}px Roboto`
-      let off = ctx.measureText(o.mineralType)
+      let off = ctx.measureText(mineral)
       ctx.fillStyle = secondary
-      ctx.fillText(o.mineralType, rx + (25 * scale) - (off.width / 2), ry + (25 * scale) + (scale * 6))
+      ctx.fillText(mineral, (25 * scale) - (off.width / 2), (25 * scale) + (scale * 6))
+      imageCache[mineral + scale] = canvas
     }
-    ctx.restore()
-  })
+    ctx.drawImage(imageCache[mineral + scale], rx, ry)
+  }
 }
 function hexToRGB (hex, opacity = 1) {
   let v = parseInt(hex.slice(1), 16)
@@ -389,6 +515,103 @@ function makeNovice () {
     delete r.remote
     r.openTime = t
   })
+}
+
+function getSectorBoundsAllBus (roomInSector) {
+  let [x, y] = utils.roomNameToXY(roomInSector)
+  if (x < 0) x -= 9
+  if (y < 0) y -= 9
+  let sx = x - (x % 10)
+  let sy = y - (y % 10)
+  let start = { x: sx , y: sy }
+  let end = { x: sx + 10, y: sy + 10 }
+  if (x < 0 && y > -1) {
+      //wxsx
+      start.x -= 1
+      end.y += 1
+  } else if (x < 0 && y < 0) {
+      //wxnx
+      start.x -= 1
+      start.y -= 1
+  } else if (x > -1 && y < 0) {
+      //exnx
+      start.y -= 1
+      end.x += 1
+  } else {
+      //exsx
+      end.x += 1
+      end.y += 1
+  }
+  return { start, end }
+}
+
+function makeRespawnSectorWall (room, borderSide, decayTime) {
+  let x, y;
+  for (let i = 0; i < 50; i++) {
+      switch(borderSide) {
+          //borderSide is related to the sector side not the room side
+          case 'left':
+              x = 49;
+              y = i;
+              break;
+          case 'right':
+              x = 0;
+              y = i;
+              break;
+          case 'top':
+              x = i;
+              y = 49;
+              break;
+          case 'bottom':
+              x = i;
+              y = 0;
+              break;
+      }
+      if (x !== undefined && y !== undefined) {
+          room.objects.push({ type: 'constructedWall', room: room.room, x, y, decayTime: { timestamp: decayTime } });
+      }
+  }
+}
+
+function makeRespawnSector (roomInSector, openTime, decayTime) {
+  //default to opening in 1 minute
+  if (openTime === undefined) { openTime = Date.now() + (1 * 1000 * 60); }
+  //default to decaying in 7 days
+  if (decayTime === undefined) { 
+      decayTime = new Date();
+      decayTime.setDate(decayTime.getDate() + 7);
+      decayTime = decayTime.getTime();
+  }
+
+  let { start, end } = getSectorBoundsAllBus(roomInSector);
+
+  for (let x = start.x; x < end.x; x++) {
+      for (let y = start.y; y < end.y; y++) {
+
+          let room = terrain.find(r => r.x == x && r.y == y);
+          room.remote = false;
+          room.status = 'normal';
+
+          let [,hor,horx,ver,very] = room.name.match(/^(\w)(\d+)(\w)(\d+)$/);
+
+          if (horx % 10 == 0 || very % 10 == 0) {
+              room.bus = true;
+              if (x == start.x && y > start.y && y < (start.y + 10)) {
+                  makeRespawnSectorWall(room, 'left', decayTime);
+              } else if (x == (start.x + 10) && y > start.y && y < (start.y + 10)) {
+                  makeRespawnSectorWall(room, 'right', decayTime);
+              } else if ((y == start.y && x > start.x && x < (start.x + 10))) {
+                  makeRespawnSectorWall(room, 'top', decayTime);
+              } else if ((y == (start.y + 10) && x > start.x && x < (start.x + 10))) {
+                  makeRespawnSectorWall(room, 'bottom', decayTime);
+              }
+          } else {
+              room.respawnArea = decayTime;
+              room.openTime = openTime;
+          }
+
+      }
+  }
 }
 
 function findBounds () {
@@ -614,3 +837,102 @@ async function autoGen(sizex, sizey) {
 //     return o
 //   }).filter(o => o)
 // })
+
+function getExits (room) {
+  const ret = {
+    top: '',
+    bottom: '',
+    left: '',
+    right: ''
+  }
+  const t = room.length === 2500 ? room : terrain.find(r => r.room === room).terrain
+  for (let i = 0; i < 50; i++) {
+    ret.top += t[i]
+    ret.bottom += t[(50 * 49) + i]
+    ret.left += t[i * 50]
+    ret.right += t[(i * 50) + 49]
+  }
+  ret.top = ret.top.replace(/2/g, '0').replace(/3/g, '1')
+  ret.bottom = ret.bottom.replace(/2/g, '0').replace(/3/g, '1')
+  ret.left = ret.left.replace(/2/g, '0').replace(/3/g, '1')
+  ret.right = ret.right.replace(/2/g, '0').replace(/3/g, '1')
+  return ret
+}
+
+async function fixExits () {
+  const found = new Set()
+  const wall = '1'.repeat(2500)
+  const ps = []
+  for (const room of terrain) {
+    if (room.terrain === wall) continue
+    if (found.has(room.room)) continue
+    const exits = getExits(room.terrain)
+    const { x, y } = room
+    const offs = [
+      ['left', 'right', -1, 0],
+      ['right', 'left', 1, 0],
+      ['top', 'bottom', 0, -1],
+      ['bottom', 'top', 0, 1]
+    ]
+    const forceGen = new Set()
+    for (const [dir, rdir, xo, yo] of offs) {
+      const r = terrain.find(r => r.x === (x + xo) && r.y === (y + yo))
+      if (r && r.terrain !== wall && !found.has(r)) {
+        const nexits = getExits(r.terrain)
+        if (exits[dir] !== nexits[rdir]) {
+          console.log(`Found mismatch:\n  ${dir} ${room.room} ${exits[dir]}\n  ${rdir} ${r.room} ${nexits[rdir]}`)
+          // forceGen.add(room.room)
+          forceGen.add(r.room)
+          found.add(room.room)
+          found.add(r.room)
+        }
+      }
+    }
+    for (const r of forceGen) {
+      delete terrainCache[r]
+    }
+    ps.push((async () => {
+      for (const r of forceGen) {
+        await gen(r)
+      }
+    })())
+  }
+  console.log(`Found ${found.size} rooms with mismatched exits`)
+  await Promise.all(ps)
+  if (found.size) await fixExits()
+}
+
+async function fixFloating () {
+  const rooms = terrain.filter(r => {
+    const obj = r.objects.find(o => r.terrain[o.x + (o.y * 50)] != '1' && ['controller', 'mineral', 'source', 'keeperLair'].includes(o.type))
+    return !!obj
+  })
+  console.log(`Found ${rooms.length} rooms with unsupported structures`)
+  await Promise.all(rooms.map(r => gen(r.room)))
+}
+
+async function fixDups () {
+  const rooms = terrain
+    .filter(r => {
+      const types = _.groupBy(r.objects, 'type')
+      if (types.controller && types.controller.length > 1) return true
+      if (types.mineral && types.mineral.length > 1) return true
+      if (types.source && types.source.length > (types.controller ? 2 : 3)) return true
+      if (types.keeperLair && types.keeperLair.length > 4) return true
+      return false
+    })
+  await Promise.all(rooms.map(r => gen(r.room)))
+  console.log(`Found ${rooms.length} rooms with too many objects`)
+}
+
+async function fixAll () {
+  if (!confirm('Warning: Fix All is a destructive process. Rooms will be forcibly regenerated. Are you sure you want to continue?')) return
+  for (const room of terrain) {
+    room.terrain = room.terrain.replace(/3/g, '1')
+  }
+  await fixFloating()
+  await fixDups()
+  await fixExits()
+  console.log(`All rooms fixed. Run save to apply.`)
+  alert(`All rooms fixed. Run save to apply.`)
+}
