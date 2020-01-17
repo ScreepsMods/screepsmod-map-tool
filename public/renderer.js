@@ -557,29 +557,65 @@ function getSectorBoundsAllBus (roomInSector) {
 }
 
 function makeRespawnSectorWall (room, borderSide, decayTime) {
-  let x, y
+  let x, y, x2, y2
+  // Edges
   for (let i = 0; i < 50; i++) {
     switch (borderSide) {
       //borderSide is related to the sector side not the room side
       case 'left':
-        x = 49
+        x = 30
         y = i
         break
       case 'right':
-        x = 0
+        x = 20
         y = i
         break
       case 'top':
         x = i
-        y = 49
+        y = 30
         break
       case 'bottom':
         x = i
-        y = 0
+        y = 20
         break
     }
     if (x !== undefined && y !== undefined) {
       room.objects.push({type: 'constructedWall', room: room.room, x, y, decayTime: {timestamp: decayTime}})
+    }
+  }
+  // Corners
+  for (let i = 0; i < 20; i++) {
+    switch (borderSide) {
+      case 'bottomLeft':
+        x = 30
+        y = i
+        x2 = 30 + i
+        y2 = 20
+        break
+      case 'topLeft':
+        x = 30 + i
+        y = 30
+        x2 = 30
+        y2 = 30 + i
+        break
+      case 'bottomRight':
+        x = i
+        y = 20
+        x2 = 20
+        y2 = i
+        break
+      case 'topRight':
+        x = i
+        y = 30
+        x2 = 20
+        y2 = 30 + i
+        break
+    }
+    if (x !== undefined && y !== undefined && x < 50 && y < 50) {
+      room.objects.push({type: 'constructedWall', room: room.room, x, y, decayTime: {timestamp: decayTime}})
+    }
+    if (x2 !== undefined && y2 !== undefined && x2 < 50 && y2 < 50) {
+      room.objects.push({type: 'constructedWall', room: room.room, x2, y2, decayTime: {timestamp: decayTime}})
     }
   }
 }
@@ -607,7 +643,15 @@ function makeRespawnSector (roomInSector, openTime, decayTime) {
 
       if (horx % 10 == 0 || very % 10 == 0) {
         room.bus = true
-        if (x == start.x && y > start.y && y < (start.y + 10)) {
+        if (x == start.x && y == start.y) {
+          makeRespawnSectorWall(room, 'bottomRight', decayTime)
+        } else if (x == start.x && y == (start.y + 10)) {
+          makeRespawnSectorWall(room, 'topRight', decayTime)
+        } else if (y == start.y && x == (start.x + 10)) {
+          makeRespawnSectorWall(room, 'bottomLeft', decayTime)
+        } else if (y == (start.y + 10) && x == (start.x + 10)) {
+          makeRespawnSectorWall(room, 'topLeft', decayTime)
+        } else if (x == start.x && y > start.y && y < (start.y + 10)) {
           makeRespawnSectorWall(room, 'left', decayTime)
         } else if (x == (start.x + 10) && y > start.y && y < (start.y + 10)) {
           makeRespawnSectorWall(room, 'right', decayTime)
