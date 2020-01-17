@@ -3,13 +3,11 @@ window.q = window.Q
 
 let floodTolerance = 37
 
-let generateOptions = {
+let generateOptions = {}
 
-}
-
-let mp = { x: 0, y: 0 }
-let mb = { left: false, right: false }
-let vp = { x: 0, y: 0, z: 1 }
+let mp = {x: 0, y: 0}
+let mb = {left: false, right: false}
+let vp = {x: 0, y: 0, z: 1}
 
 let scale = 1
 let flood = false
@@ -22,12 +20,13 @@ function getTool () {
 }
 
 prefetch()
+
 function prefetch () {
   getAllTerrain(true)
     .then(ts => {
       ts.map(t => {
-        let { room } = t
-        let [ x, y ] = utils.roomNameToXY(room)
+        let {room} = t
+        let [x, y] = utils.roomNameToXY(room)
         window.terrainCache[room] = Object.assign(t, {
           room,
           x,
@@ -45,13 +44,13 @@ function previewTypes () {
   for (let y = 0; y < 12; y++) {
     for (let x = 1; x <= 28; x++) {
       let room = utils.roomNameFromXY(x, y)
-      queue.push({ room, terrainType: x })
+      queue.push({room, terrainType: x})
       window.terrainCache[room] = null
     }
   }
   let proc = function () {
-    let { room, terrainType } = queue.pop()
-    gen(room, { terrainType })
+    let {room, terrainType} = queue.pop()
+    gen(room, {terrainType})
     if (queue.length) setTimeout(proc, 100)
   }
   proc()
@@ -62,7 +61,7 @@ canvas.addEventListener('mousewheel', e => {
   if (e.deltaY > 0 && scale > 1) scale--
   if (e.deltaY < 0 && scale < 8) scale++
   if (oldScale !== scale) {
-    mp = { x: e.clientX, y: e.clientY }
+    mp = {x: e.clientX, y: e.clientY}
     let [x, y] = [-vp.x, -vp.y]
     x += mp.x
     y += mp.y
@@ -88,16 +87,16 @@ canvas.addEventListener('mousewheel', e => {
 })
 
 canvas.addEventListener('mousemove', e => {
-  let [ x, y ] = [e.clientX, e.clientY]
+  let [x, y] = [e.clientX, e.clientY]
   x -= vp.x
   y -= vp.y
   if (x < 0) x -= 50 * scale
   if (y < 0) y -= 50 * scale
   let rx = Math.floor((x / scale) % 50)
   let ry = Math.floor((y / scale) % 50)
-  mp = { x: e.clientX, y: e.clientY, rx, ry }
+  mp = {x: e.clientX, y: e.clientY, rx, ry}
   if (mb.left) {
-    let { x, y, ovp } = mb.left
+    let {x, y, ovp} = mb.left
     let dx = mp.x - x
     let dy = mp.y - y
     if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
@@ -113,33 +112,33 @@ canvas.addEventListener('mousedown', e => {
   let btn = btns[e.button] || 'right'
   let x = e.clientX
   let y = e.clientY
-  mb[btn] = { x, y, ovp: Object.assign({}, vp) }
+  mb[btn] = {x, y, ovp: Object.assign({}, vp)}
 })
 
 const tools = {
   gen: [
-    { key: 'left', action: ({ room }) => gen(room) },
-    { key: 'ctrl+left', action: ({ room }) => generateSector(room) },
+    {key: 'left', action: ({room}) => gen(room)},
+    {key: 'ctrl+left', action: ({room}) => generateSector(room)},
     {
       key: 'middle',
-      action: ({ e }) => {
-        flood = flood ? false : { x: e.clientX, y: e.clientY }
+      action: ({e}) => {
+        flood = flood ? false : {x: e.clientX, y: e.clientY}
       }
     },
-    { 
-      key: 'right', 
-      action: ({ room }) => {
+    {
+      key: 'right',
+      action: ({room}) => {
         terrainCache[room] = null
         let ind = terrain.findIndex(r => r.room === room)
         if (~ind) terrain.splice(ind, 1)
       }
     },
-    { key: 'ctrl+right', action: ({ room }) => deleteSector(room) }
+    {key: 'ctrl+right', action: ({room}) => deleteSector(room)}
   ],
   edit: [
-    { key: 'left', action: ({ room, x, y }) => editTerrain(room, x, y, 'wall') },
-    { key: 'middle', action: ({ room, x, y }) => editTerrain(room, x, y, 'swamp') },
-    { key: 'right', action: ({ room, x, y }) => editTerrain(room, x, y, 'plain') }
+    {key: 'left', action: ({room, x, y}) => editTerrain(room, x, y, 'wall')},
+    {key: 'middle', action: ({room, x, y}) => editTerrain(room, x, y, 'swamp')},
+    {key: 'right', action: ({room, x, y}) => editTerrain(room, x, y, 'plain')}
   ]
 }
 
@@ -158,8 +157,8 @@ canvas.addEventListener('mouseup', e => {
   let room = utils.roomNameFromXY(cell.x, cell.y)
   let btns = ['left', 'middle', 'right']
   let btn = btns[e.button] || 'right'
-  let { ctrlKey, shiftKey, altKey, metaKey } = e
-  let { drag } = mb[btn]
+  let {ctrlKey, shiftKey, altKey, metaKey} = e
+  let {drag} = mb[btn]
   mb[btn] = {}
   if (drag) return
   const keys = []
@@ -171,7 +170,7 @@ canvas.addEventListener('mouseup', e => {
   const key = keys.join('+')
   const tool = getTool()
   if (tool) {
-    const { action } = tool.find(t => t.key === key) || {}
+    const {action} = tool.find(t => t.key === key) || {}
     if (action) {
       action({
         room,
@@ -195,10 +194,10 @@ let cell = {}
 
 function isInView (x, y, w, h) {
   const canvas = document.getElementById('canvas')
-  const l1 = { x, y }
-  const r1 = { x: x + w, y: y + h }
-  const l2 = { x: -vp.x, y: -vp.y }
-  const r2 = { x: -vp.x + canvas.width, y: -vp.y + canvas.height }
+  const l1 = {x, y}
+  const r1 = {x: x + w, y: y + h}
+  const l2 = {x: -vp.x, y: -vp.y}
+  const r2 = {x: -vp.x + canvas.width, y: -vp.y + canvas.height}
   if (l1.x > r2.x || l2.x > r1.x) return false
   if (l1.y > r2.y || l2.y > r1.y) return false
   return true
@@ -227,21 +226,21 @@ function render () {
     ctx.restore()
   }
   {
-    let { x, y } = mp
+    let {x, y} = mp
     x -= vp.x
     y -= vp.y
     if (x < 0) x -= 50 * scale
     if (y < 0) y -= 50 * scale
     let rx = x - x % (50 * scale)
     let ry = y - y % (50 * scale)
-    cell = { x: rx / (50 * scale), y: ry / (50 * scale) }
+    cell = {x: rx / (50 * scale), y: ry / (50 * scale)}
     cell.room = utils.roomNameFromXY(cell.x, cell.y)
     ctx.beginPath()
     ctx.rect(rx, ry, (50 * scale), (50 * scale))
     ctx.strokeStyle = 'red'
     ctx.stroke()
 
-    let { start, end } = getSectorBounds(cell.room)
+    let {start, end} = getSectorBounds(cell.room)
     let s = 50 * scale
     ctx.beginPath()
     let w = Math.abs(end.x - start.x)
@@ -264,7 +263,7 @@ function render () {
     ctx.fillStyle = 'white'
     ctx.fillText(cell.room, 5, 25)
     ctx.fillText(`(${cell.x},${cell.y})`, 5, 45)
-    let { x, y } = mp
+    let {x, y} = mp
     x -= vp.x
     y -= vp.y
     if (x < 0) x -= 50 * scale
@@ -282,7 +281,7 @@ function render () {
       Math.floor(Math.abs(vp.x % scale)),
       Math.floor(Math.abs(vp.y % scale))
     ]
-    
+
     let x = (mp.rx * scale) + (cell.x * scale) // (mp.x + xo)
     let y = (mp.ry * scale) + (cell.y * scale) // (mp.y + yo)
     ctx.beginPath()
@@ -301,6 +300,7 @@ function render () {
 }
 
 let imageCache = {}
+
 function renderRoom (ctx, room) {
   if (!room.terrain) return
   let img = imageCache[room.terrain + scale] = imageCache[room.terrain + scale] || utils.writeTerrainToPng(room.terrain, scale)
@@ -380,6 +380,7 @@ function renderRoom (ctx, room) {
     ctx.drawImage(imageCache[mineral + scale], rx, ry)
   }
 }
+
 function hexToRGB (hex, opacity = 1) {
   let v = parseInt(hex.slice(1), 16)
   let r = (v & 0xFF0000) >> 16
@@ -387,16 +388,19 @@ function hexToRGB (hex, opacity = 1) {
   let b = (v & 0x0000FF) >> 0
   return `rgba(${r},${g},${b},${opacity})`
 }
+
 function loop () {
   requestAnimationFrame(loop)
   render()
 }
+
 loop()
 
 function resize () {
   canvas.width = window.innerWidth
   canvas.height = window.innerHeight
 }
+
 resize()
 window.addEventListener('resize', resize)
 
@@ -425,9 +429,16 @@ function gen (room) {
   let opts = generateOptions
   // worker.postMessage({ action: 'generate', room, terrainCache, opts })
   let id = Math.random().toString(36).slice(2)
-  pool.queue.unshift({ action: 'generate', room, terrainCache, opts, id, wallChance: parseInt(document.querySelector('[name=wallChance]').value) / 100 })
+  pool.queue.unshift({
+    action: 'generate',
+    room,
+    terrainCache,
+    opts,
+    id,
+    wallChance: parseInt(document.querySelector('[name=wallChance]').value) / 100
+  })
   return new Promise((resolve, reject) => {
-    pool.cbs[id] = { resolve, reject }
+    pool.cbs[id] = {resolve, reject}
   })
 }
 
@@ -441,7 +452,7 @@ for (let i = 0; i < pool.count; i++) {
     if (msg.data.action === 'generate') {
       let r = msg.data.room
       if (r.opts) {
-        let { exits } = r.opts
+        let {exits} = r.opts
         delete r.opts
         r.exits = {}
         for (let dir in exits) {
@@ -453,14 +464,14 @@ for (let i = 0; i < pool.count; i++) {
       //console.log(r)
       output.value = JSON.stringify(terrain.filter(r => !r.remote))
     }
-    let { id } = msg.data
+    let {id} = msg.data
     if (id && pool.cbs[id]) {
       pool.cbs[id].resolve(msg)
       delete pool.cbs[id]
     }
   })
   pool.workers.push(worker)
-  worker.postMessage({ action: 'ping' })
+  worker.postMessage({action: 'ping'})
 }
 
 function save (active) {
@@ -484,7 +495,7 @@ function makeNovice () {
   d.setDate(1)
   d = d.getTime()
   terrain.forEach((r) => {
-    let { room, objects } = r
+    let {room, objects} = r
     r.objects = r.objects.filter(o => o.type != 'constructedWall')
     if (room.match(/0S/) || room.match(/0$/)) {
       r.bus = true
@@ -506,7 +517,7 @@ function makeNovice () {
           x = i
           y = 0
         }
-        r.objects.push({ type: 'constructedWall', room, x, y, decayTime: { timestamp: d } })
+        r.objects.push({type: 'constructedWall', room, x, y, decayTime: {timestamp: d}})
       }
     }
     if (!r.bus) {
@@ -523,101 +534,101 @@ function getSectorBoundsAllBus (roomInSector) {
   if (y < 0) y -= 9
   let sx = x - (x % 10)
   let sy = y - (y % 10)
-  let start = { x: sx , y: sy }
-  let end = { x: sx + 10, y: sy + 10 }
+  let start = {x: sx, y: sy}
+  let end = {x: sx + 10, y: sy + 10}
   if (x < 0 && y > -1) {
-      //wxsx
-      start.x -= 1
-      end.y += 1
+    //wxsx
+    start.x -= 1
+    end.y += 1
   } else if (x < 0 && y < 0) {
-      //wxnx
-      start.x -= 1
-      start.y -= 1
+    //wxnx
+    start.x -= 1
+    start.y -= 1
   } else if (x > -1 && y < 0) {
-      //exnx
-      start.y -= 1
-      end.x += 1
+    //exnx
+    start.y -= 1
+    end.x += 1
   } else {
-      //exsx
-      end.x += 1
-      end.y += 1
+    //exsx
+    end.x += 1
+    end.y += 1
   }
-  return { start, end }
+  return {start, end}
 }
 
 function makeRespawnSectorWall (room, borderSide, decayTime) {
-  let x, y;
+  let x, y
   for (let i = 0; i < 50; i++) {
-      switch(borderSide) {
-          //borderSide is related to the sector side not the room side
-          case 'left':
-              x = 49;
-              y = i;
-              break;
-          case 'right':
-              x = 0;
-              y = i;
-              break;
-          case 'top':
-              x = i;
-              y = 49;
-              break;
-          case 'bottom':
-              x = i;
-              y = 0;
-              break;
-      }
-      if (x !== undefined && y !== undefined) {
-          room.objects.push({ type: 'constructedWall', room: room.room, x, y, decayTime: { timestamp: decayTime } });
-      }
+    switch (borderSide) {
+      //borderSide is related to the sector side not the room side
+      case 'left':
+        x = 49
+        y = i
+        break
+      case 'right':
+        x = 0
+        y = i
+        break
+      case 'top':
+        x = i
+        y = 49
+        break
+      case 'bottom':
+        x = i
+        y = 0
+        break
+    }
+    if (x !== undefined && y !== undefined) {
+      room.objects.push({type: 'constructedWall', room: room.room, x, y, decayTime: {timestamp: decayTime}})
+    }
   }
 }
 
 function makeRespawnSector (roomInSector, openTime, decayTime) {
   //default to opening in 1 minute
-  if (openTime === undefined) { openTime = Date.now() + (1 * 1000 * 60); }
+  if (openTime === undefined) { openTime = Date.now() + (1 * 1000 * 60) }
   //default to decaying in 7 days
-  if (decayTime === undefined) { 
-      decayTime = new Date();
-      decayTime.setDate(decayTime.getDate() + 7);
-      decayTime = decayTime.getTime();
+  if (decayTime === undefined) {
+    decayTime = new Date()
+    decayTime.setDate(decayTime.getDate() + 7)
+    decayTime = decayTime.getTime()
   }
 
-  let { start, end } = getSectorBoundsAllBus(roomInSector);
+  let {start, end} = getSectorBoundsAllBus(roomInSector)
 
   for (let x = start.x; x < end.x; x++) {
-      for (let y = start.y; y < end.y; y++) {
+    for (let y = start.y; y < end.y; y++) {
 
-          let room = terrain.find(r => r.x == x && r.y == y);
-          room.remote = false;
-          room.status = 'normal';
+      let room = terrain.find(r => r.x == x && r.y == y)
+      room.remote = false
+      room.status = 'normal'
 
-          let [,hor,horx,ver,very] = room.name.match(/^(\w)(\d+)(\w)(\d+)$/);
+      let [, hor, horx, ver, very] = room.name.match(/^(\w)(\d+)(\w)(\d+)$/)
 
-          if (horx % 10 == 0 || very % 10 == 0) {
-              room.bus = true;
-              if (x == start.x && y > start.y && y < (start.y + 10)) {
-                  makeRespawnSectorWall(room, 'left', decayTime);
-              } else if (x == (start.x + 10) && y > start.y && y < (start.y + 10)) {
-                  makeRespawnSectorWall(room, 'right', decayTime);
-              } else if ((y == start.y && x > start.x && x < (start.x + 10))) {
-                  makeRespawnSectorWall(room, 'top', decayTime);
-              } else if ((y == (start.y + 10) && x > start.x && x < (start.x + 10))) {
-                  makeRespawnSectorWall(room, 'bottom', decayTime);
-              }
-          } else {
-              room.respawnArea = decayTime;
-              room.openTime = openTime;
-          }
-
+      if (horx % 10 == 0 || very % 10 == 0) {
+        room.bus = true
+        if (x == start.x && y > start.y && y < (start.y + 10)) {
+          makeRespawnSectorWall(room, 'left', decayTime)
+        } else if (x == (start.x + 10) && y > start.y && y < (start.y + 10)) {
+          makeRespawnSectorWall(room, 'right', decayTime)
+        } else if ((y == start.y && x > start.x && x < (start.x + 10))) {
+          makeRespawnSectorWall(room, 'top', decayTime)
+        } else if ((y == (start.y + 10) && x > start.x && x < (start.x + 10))) {
+          makeRespawnSectorWall(room, 'bottom', decayTime)
+        }
+      } else {
+        room.respawnArea = decayTime
+        room.openTime = openTime
       }
+
+    }
   }
 }
 
 function findBounds () {
   const solidTerrain = '1'.repeat(2500)
-  let start = { x: 100, y: 100 }
-  let end = { x: -100, y: -100 }
+  let start = {x: 100, y: 100}
+  let end = {x: -100, y: -100}
   terrain.forEach(r => {
     if (r.terrain === solidTerrain) return // Skip solid rooms
     start.x = Math.min(start.x, r.x)
@@ -625,11 +636,11 @@ function findBounds () {
     end.x = Math.max(end.x, r.x)
     end.y = Math.max(end.y, r.y)
   })
-  return { start, end }
+  return {start, end}
 }
 
 function generateSolidWall () {
-  let { start, end } = findBounds()
+  let {start, end} = findBounds()
   for (let x = start.x - 1; x <= end.x + 1; x++) {
     for (let y = start.y - 1; y <= end.y + 1; y++) {
       let room = terrain.find(r => r.x === x && r.y === y)
@@ -656,7 +667,7 @@ function makeSolidRoom (x, y) {
   let terrain = '1'.repeat(2500)
   let objects = []
   let status = 'out of borders'
-  let obj = { room, x, y, terrain, objects, status }
+  let obj = {room, x, y, terrain, objects, status}
   let data = window.terrain.find(r => r.x === x && r.y === y)
   if (data) Object.assign(data, obj)
   else window.terrain.push(obj)
@@ -668,15 +679,15 @@ function getSectorBounds (room) {
   if (y < 0) y -= 9
   let sx = x - (x % 10)
   let sy = y - (y % 10)
-  let start = { x: sx, y: sy }
-  let end = { x: sx + 10, y: sy + 10 }
-  return { start, end }
+  let start = {x: sx, y: sy}
+  let end = {x: sx + 10, y: sy + 10}
+  return {start, end}
 }
 
 async function generateSector (room) {
   let p1 = []
   let p2 = []
-  let { start, end } = getSectorBounds(room)
+  let {start, end} = getSectorBounds(room)
   if (start.x < 0) {
     start.x -= 1
     end.x -= 1
@@ -705,7 +716,7 @@ async function generateSector (room) {
 function deleteSector (room) {
   let p1 = []
   let p2 = []
-  let { start, end } = getSectorBounds(room)
+  let {start, end} = getSectorBounds(room)
   for (let x = start.x; x < end.x; x++) {
     for (let y = start.y; y < end.y; y++) {
       makeSolidRoom(x, y)
@@ -720,7 +731,7 @@ function createGrid () {
   let xyToInd = (x, y) => ((y - 1) * 9) + x
   for (let y = 1; y < 10; y++) {
     for (let x = 1; x < 10; x++) {
-      nodes.push({ x, y })
+      nodes.push({x, y})
       if (x < 9) {
         edges.push([
           xyToInd(x + 0, y + 0),
@@ -743,12 +754,12 @@ function createGrid () {
   }
 }
 
-async function autoGen(sizex, sizey) {
+async function autoGen (sizex, sizey) {
   if (sizex % 2 !== 0 || sizey % 2 !== 0) {
     alert(`autoGen aborted!\nautoGen requires even numbers for width and height`)
     return
   }
-  if(!confirm('Warning: Auto Gen erases all current rooms, are you sure?')) return
+  if (!confirm('Warning: Auto Gen erases all current rooms, are you sure?')) return
   terrain.splice(0, Number.MAX_VALUE)
   for (const k of Object.keys(terrainCache)) {
     delete terrainCache[k]
@@ -867,7 +878,7 @@ async function fixExits () {
     if (room.terrain === wall) continue
     if (found.has(room.room)) continue
     const exits = getExits(room.terrain)
-    const { x, y } = room
+    const {x, y} = room
     const offs = [
       ['left', 'right', -1, 0],
       ['right', 'left', 1, 0],
