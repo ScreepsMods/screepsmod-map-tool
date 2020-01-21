@@ -612,10 +612,10 @@ function makeRespawnSectorWall (room, borderSide, decayTime) {
         break
     }
     if (x !== undefined && y !== undefined && x < 50 && y < 50) {
-      room.objects.push({type: 'constructedWall', room: room.room, x, y, decayTime: {timestamp: decayTime}})
+      room.objects.push({type: 'constructedWall', room: room.room, x: x, y: y, decayTime: {timestamp: decayTime}})
     }
     if (x2 !== undefined && y2 !== undefined && x2 < 50 && y2 < 50) {
-      room.objects.push({type: 'constructedWall', room: room.room, x2, y2, decayTime: {timestamp: decayTime}})
+      room.objects.push({type: 'constructedWall', room: room.room, x: x2, y: y2, decayTime: {timestamp: decayTime}})
     }
   }
   if (borderSide === 'bottomRight') {
