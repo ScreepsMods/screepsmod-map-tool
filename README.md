@@ -51,3 +51,11 @@ Edit `.screepsrc` to configure
 user = admin
 pass = password
 ```
+
+If using screeps-launcher, you can specify user and pass in your `config.yml`:
+```yaml
+env:
+  backend:
+    MAPTOOL_USER: admin
+    MAPTOOL_PASS: password
+```
