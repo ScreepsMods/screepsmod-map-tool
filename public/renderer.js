@@ -64,6 +64,7 @@ dropJSON(
   function (data) {
     window.terrain.splice(0, window.terrain.length)
     loadRooms(data.rooms)
+    window.terrain.forEach(t => t.remote = false)
   }
 );
 
