@@ -13,7 +13,8 @@ let scale = 1
 let flood = false
 
 let overlay = ''
-let currentTool = 'gen'
+// let currentTool = 'gen'
+let currentTool = 'block'
 
 function getTool() {
   return tools[currentTool]
@@ -168,7 +169,16 @@ const tools = {
     { key: 'left', action: ({ room, x, y }) => editTerrain(room, x, y, 'wall') },
     { key: 'middle', action: ({ room, x, y }) => editTerrain(room, x, y, 'swamp') },
     { key: 'right', action: ({ room, x, y }) => editTerrain(room, x, y, 'plain') }
+  ],
+  block: [
+    { key: 'left', action: ({ room, x, y }) => logMapClick(room, x, y) },
+    { key: 'middle', action: ({ room, x, y }) => logMapClick(room, x, y) },
+    { key: 'right', action: ({ room, x, y }) => logMapClick(room, x, y) }
   ]
+}
+
+function logMapClick(room, x, y) {
+  console.log(room, x, y)
 }
 
 function editTerrain(room, x, y, type) {
@@ -212,6 +222,33 @@ canvas.addEventListener('mouseup', e => {
   e.preventDefault()
   return true
 })
+
+function center(room) {
+  const rp = utils.roomNameToXY(room)
+  vp.x = rp[0] * scale * 50 * -1 + (window.innerWidth / 2)
+  vp.y = rp[1] * scale * 50 * -1 + (window.innerHeight / 2)
+}
+
+function arrow(e) {
+  const speed = 50
+  if (e.keyCode == '38') {
+    // up arrow
+    vp.y += speed * scale
+  }
+  else if (e.keyCode == '40') {
+    // down arrow
+    vp.y -= speed * scale
+  }
+  else if (e.keyCode == '37') {
+    // left arrow
+    vp.x += speed * scale
+  }
+  else if (e.keyCode == '39') {
+    // right arrow
+    vp.x -= speed * scale
+  }
+}
+window.addEventListener('keyup', (e) => arrow(e))
 
 window.oncontextmenu = function (event) {
   event.preventDefault()
