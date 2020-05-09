@@ -155,14 +155,7 @@ const tools = {
         flood = flood ? false : { x: e.clientX, y: e.clientY }
       }
     },
-    {
-      key: 'right',
-      action: ({ room }) => {
-        terrainCache[room] = null
-        let ind = terrain.findIndex(r => r.room === room)
-        if (~ind) terrain.splice(ind, 1)
-      }
-    },
+    { key: 'right',  action: ({ room }) => del(room) },
     { key: 'ctrl+right', action: ({ room }) => deleteSector(room) }
   ],
   edit: [
@@ -508,6 +501,13 @@ function gen(room) {
   })
 }
 
+function del(room) {
+  if (!roomsToBrick.includes(room)) roomsToBrick.push(room)
+  terrainCache[room] = null
+  let ind = terrain.findIndex(r => r.room === room)
+  if (~ind) terrain.splice(ind, 1)
+}
+
 for (let i = 0; i < pool.count; i++) {
   let worker = new Worker('worker.js')
   worker.addEventListener('message', msg => {
@@ -542,6 +542,16 @@ for (let i = 0; i < pool.count; i++) {
 
 function save(active) {
   if (!confirm('Are you sure you want to save?')) return
+  if (roomsToBrick.length > 0) {
+    for (var room of roomsToBrick) {
+      const idx = terrain.findIndex(r => r.room === room)
+      if (idx === -1) {
+        const [x, y] = utils.roomNameToXY(room)
+        // console.log('makeSolidRoom ', room, x, y)
+        makeSolidRoom(x, y)        
+      }
+    }
+  }
   terrain.forEach(r => r.status = r.status || (active ? 'normal' : 'out of borders'))
   let json = JSON.stringify(terrain.filter(r => !r.remote))
   fetch(`${server}/api/maptool/set`, {
