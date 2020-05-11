@@ -46,14 +46,13 @@ Ctrl+Right Click to close a sector (ignores highways)
 
 ### Main Menu
 
-`Save` saves the current state of the map   Note: reloading the window without hitting `Save` will reload the map from the server and all changes to the map will be lost
+`Save` saves the current state of the map   *Note:* reloading the window without hitting `Save` will reload the map from the server and all changes to the map will be lost
 
-`Generate Walls` will generate solid rooms surrounding the generated ones, this prevents pathfinding that result from exits leading to the 'void'   Note: don't leave any room open to the 'void', doing so _will_ cause pathfinding errors
+`Generate Walls` will generate solid rooms surrounding the generated ones, this prevents pathfinding errors that result from exits leading to the 'void'   *Note:* don't leave any room open to the 'void', doing so _will_ cause pathfinding errors
 
-`Fix All Rooms` this will search for and fix exit mismatches, terrain errors, game object errors sometimes caused by generation
+`Fix All Rooms` this will search for and fix exit mismatches, terrain errors, and game object errors sometimes caused by generation
 
-The slider controls the solid wall chances, show walls will show solid walls for 
-newly generated rooms _only_
+The slider controls the solid wall chances for newly generated rooms
 
 'Show Walls' will display newly generated rooms that are walled off from each other with a red line
 
