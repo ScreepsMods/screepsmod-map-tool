@@ -163,6 +163,12 @@ const tools = {
     { key: 'middle', action: ({ room, x, y }) => editTerrain(room, x, y, 'swamp') },
     { key: 'right', action: ({ room, x, y }) => editTerrain(room, x, y, 'plain') }
   ],
+  access: [
+    { key: 'left', action: ({ room }) => changeRoomStatus(getRoomFromName(room), 'normal') },
+    { key: 'ctrl+left', action: ({ room }) => changeSectorStatus(room, 'normal') },
+    { key: 'right', action: ({ room }) => changeRoomStatus(getRoomFromName(room), 'out of borders') },
+    { key: 'ctrl+right', action: ({ room }) => changeSectorStatus(room, 'out of borders') }
+  ],
   block: [
     { key: 'left', action: ({ room, x, y }) => logMapClick(room, x, y) },
     { key: 'middle', action: ({ room, x, y }) => logMapClick(room, x, y) },
@@ -172,6 +178,26 @@ const tools = {
 
 function logMapClick(room, x, y) {
   console.log(room, x, y)
+}
+
+function getRoomFromName(room) { return terrain.find(r => r.name === room) }
+
+function getRoomFromXY(x, y) { return terrain.find(r => r.x == x && r.y == y) }
+
+function changeRoomStatus(room, status) {
+  //expects room to be the object and not just the name
+  console.log(room, room.status, "->", status)
+  room.status = status
+  room.remote = false
+}
+
+function changeSectorStatus(roomNameInSector, status) {
+  let { start, end } = getSectorBounds(roomNameInSector, "none")
+  for (let x = start.x; x < end.x; x++) {
+    for (let y = start.y; y < end.y; y++) {
+      changeRoomStatus(getRoomFromXY(x, y), status)
+    }
+  }
 }
 
 function editTerrain(room, x, y, type) {
@@ -604,31 +630,60 @@ function makeNovice() {
   })
 }
 
-function getSectorBoundsAllBus(roomInSector) {
-  let [x, y] = utils.roomNameToXY(roomInSector)
+function getSectorBounds(roomNameInSector, busOption) {
+  let [x, y] = utils.roomNameToXY(roomNameInSector)
   if (x < 0) x -= 9
   if (y < 0) y -= 9
   let sx = x - (x % 10)
   let sy = y - (y % 10)
   let start = { x: sx, y: sy }
   let end = { x: sx + 10, y: sy + 10 }
-  if (x < 0 && y > -1) {
-    //wxsx
-    start.x -= 1
-    end.y += 1
-  } else if (x < 0 && y < 0) {
-    //wxnx
-    start.x -= 1
-    start.y -= 1
-  } else if (x > -1 && y < 0) {
-    //exnx
-    start.y -= 1
-    end.x += 1
-  } else {
-    //exsx
-    end.x += 1
-    end.y += 1
+
+  if (busOption !== undefined) {
+    switch(busOption) {
+      case "default":
+        break;
+      case "all":
+        if (x < 0 && y > -1) {
+          //wxsx
+          start.x -= 1
+          end.y += 1
+        } else if (x < 0 && y < 0) {
+          //wxnx
+          start.x -= 1
+          start.y -= 1
+        } else if (x > -1 && y < 0) {
+          //exnx
+          start.y -= 1
+          end.x += 1
+        } else {
+          //exsx
+          end.x += 1
+          end.y += 1
+        }
+        break;
+      case "none":
+        if (x < 0 && y > -1) {
+          //wxsx
+          end.x -= 1
+          start.y += 1
+        } else if (x < 0 && y < 0) {
+          //wxnx
+          end.x -= 1
+          end.y -= 1
+        } else if (x > -1 && y < 0) {
+          //exnx
+          end.y -= 1
+          start.x += 1
+        } else {
+          //exsx
+          start.x += 1
+          start.y += 1
+        }  
+        break;
+    }
   }
+
   return { start, end }
 }
 
@@ -709,7 +764,7 @@ function makeRespawnSector(roomInSector, openTime, decayTime) {
     decayTime = decayTime.getTime()
   }
 
-  let { start, end } = getSectorBoundsAllBus(roomInSector)
+  let { start, end } = getSectorBounds(roomInSector, "all")
 
   for (let x = start.x; x < end.x; x++) {
     for (let y = start.y; y < end.y; y++) {
@@ -794,17 +849,6 @@ function makeSolidRoom(x, y) {
   let data = window.terrain.find(r => r.x === x && r.y === y)
   if (data) Object.assign(data, obj)
   else window.terrain.push(obj)
-}
-
-function getSectorBounds(room) {
-  let [x, y] = utils.roomNameToXY(room)
-  if (x < 0) x -= 9
-  if (y < 0) y -= 9
-  let sx = x - (x % 10)
-  let sy = y - (y % 10)
-  let start = { x: sx, y: sy }
-  let end = { x: sx + 10, y: sy + 10 }
-  return { start, end }
 }
 
 async function generateSector(room) {
