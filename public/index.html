@@ -14,8 +14,7 @@
 	<body>
 		<canvas id="canvas"></canvas>
 		<div class="controlpanel">
-			<button onclick="save()">Save Closed</button>
-			<button onclick="save(true)">Save Open</button>
+			<button onclick="save(true)">Save</button>
 			<button onclick="generateSolidWall()">Generate Walls</button>
 			<button onclick="fixAll()">Fix All Rooms</button>
 			<input type="range" name="wallChance" value="25" min="0" max="100" step="10" oninput="this.title=this.value + '%'">
@@ -27,9 +26,12 @@
 			<button onclick="autoGen(4,2)">Auto Gen (4x2)</button>
 			<button onclick="autoGen(4,4)">Auto Gen (4x4)</button>
 			<label>
+				Mouse Tool
 				<select oninput="currentTool = this.value">
-					<option value="gen">Generation</option>
-					<option value="edit">Editor</option>
+					<option value="gen">Generate Rooms</option>
+					<option value="edit">Edit Room Terrain</option>
+					<option value="access">Open/Close Rooms</option>
+					<option selected value="block">No Tool Selected</option>					
 				</select>
 			</label>
 		</div>

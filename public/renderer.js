@@ -13,7 +13,8 @@ let scale = 1
 let flood = false
 
 let overlay = ''
-let currentTool = 'gen'
+// let currentTool = 'gen'
+let currentTool = 'block'
 
 function getTool() {
   return tools[currentTool]
@@ -154,21 +155,49 @@ const tools = {
         flood = flood ? false : { x: e.clientX, y: e.clientY }
       }
     },
-    {
-      key: 'right',
-      action: ({ room }) => {
-        terrainCache[room] = null
-        let ind = terrain.findIndex(r => r.room === room)
-        if (~ind) terrain.splice(ind, 1)
-      }
-    },
+    { key: 'right',  action: ({ room }) => del(room) },
     { key: 'ctrl+right', action: ({ room }) => deleteSector(room) }
   ],
   edit: [
     { key: 'left', action: ({ room, x, y }) => editTerrain(room, x, y, 'wall') },
     { key: 'middle', action: ({ room, x, y }) => editTerrain(room, x, y, 'swamp') },
     { key: 'right', action: ({ room, x, y }) => editTerrain(room, x, y, 'plain') }
+  ],
+  access: [
+    { key: 'left', action: ({ room }) => changeRoomStatus(getRoomFromName(room), 'normal') },
+    { key: 'ctrl+left', action: ({ room }) => changeSectorStatus(room, 'normal') },
+    { key: 'right', action: ({ room }) => changeRoomStatus(getRoomFromName(room), 'out of borders') },
+    { key: 'ctrl+right', action: ({ room }) => changeSectorStatus(room, 'out of borders') }
+  ],
+  block: [
+    { key: 'left', action: ({ room, x, y }) => logMapClick(room, x, y) },
+    { key: 'middle', action: ({ room, x, y }) => logMapClick(room, x, y) },
+    { key: 'right', action: ({ room, x, y }) => logMapClick(room, x, y) }
   ]
+}
+
+function logMapClick(room, x, y) {
+  console.log(room, x, y)
+}
+
+function getRoomFromName(room) { return terrain.find(r => r.name === room) }
+
+function getRoomFromXY(x, y) { return terrain.find(r => r.x == x && r.y == y) }
+
+function changeRoomStatus(room, status) {
+  //expects room to be the object and not just the name
+  console.log(room, room.status, "->", status)
+  room.status = status
+  room.remote = false
+}
+
+function changeSectorStatus(roomNameInSector, status) {
+  let { start, end } = getSectorBounds(roomNameInSector, "none")
+  for (let x = start.x; x < end.x; x++) {
+    for (let y = start.y; y < end.y; y++) {
+      changeRoomStatus(getRoomFromXY(x, y), status)
+    }
+  }
 }
 
 function editTerrain(room, x, y, type) {
@@ -212,6 +241,33 @@ canvas.addEventListener('mouseup', e => {
   e.preventDefault()
   return true
 })
+
+function center(room) {
+  const rp = utils.roomNameToXY(room)
+  vp.x = rp[0] * scale * 50 * -1 + (window.innerWidth / 2)
+  vp.y = rp[1] * scale * 50 * -1 + (window.innerHeight / 2)
+}
+
+function arrow(e) {
+  const speed = 50
+  if (e.keyCode == '38') {
+    // up arrow
+    vp.y += speed * scale
+  }
+  else if (e.keyCode == '40') {
+    // down arrow
+    vp.y -= speed * scale
+  }
+  else if (e.keyCode == '37') {
+    // left arrow
+    vp.x += speed * scale
+  }
+  else if (e.keyCode == '39') {
+    // right arrow
+    vp.x -= speed * scale
+  }
+}
+window.addEventListener('keyup', (e) => arrow(e))
 
 window.oncontextmenu = function (event) {
   event.preventDefault()
@@ -471,6 +527,13 @@ function gen(room) {
   })
 }
 
+function del(room) {
+  if (!roomsToBrick.includes(room)) roomsToBrick.push(room)
+  terrainCache[room] = null
+  let ind = terrain.findIndex(r => r.room === room)
+  if (~ind) terrain.splice(ind, 1)
+}
+
 for (let i = 0; i < pool.count; i++) {
   let worker = new Worker('worker.js')
   worker.addEventListener('message', msg => {
@@ -505,6 +568,16 @@ for (let i = 0; i < pool.count; i++) {
 
 function save(active) {
   if (!confirm('Are you sure you want to save?')) return
+  if (roomsToBrick.length > 0) {
+    for (var room of roomsToBrick) {
+      const idx = terrain.findIndex(r => r.room === room)
+      if (idx === -1) {
+        const [x, y] = utils.roomNameToXY(room)
+        // console.log('makeSolidRoom ', room, x, y)
+        makeSolidRoom(x, y)        
+      }
+    }
+  }
   terrain.forEach(r => r.status = r.status || (active ? 'normal' : 'out of borders'))
   let json = JSON.stringify(terrain.filter(r => !r.remote))
   fetch(`${server}/api/maptool/set`, {
@@ -557,31 +630,60 @@ function makeNovice() {
   })
 }
 
-function getSectorBoundsAllBus(roomInSector) {
-  let [x, y] = utils.roomNameToXY(roomInSector)
+function getSectorBounds(roomNameInSector, busOption) {
+  let [x, y] = utils.roomNameToXY(roomNameInSector)
   if (x < 0) x -= 9
   if (y < 0) y -= 9
   let sx = x - (x % 10)
   let sy = y - (y % 10)
   let start = { x: sx, y: sy }
   let end = { x: sx + 10, y: sy + 10 }
-  if (x < 0 && y > -1) {
-    //wxsx
-    start.x -= 1
-    end.y += 1
-  } else if (x < 0 && y < 0) {
-    //wxnx
-    start.x -= 1
-    start.y -= 1
-  } else if (x > -1 && y < 0) {
-    //exnx
-    start.y -= 1
-    end.x += 1
-  } else {
-    //exsx
-    end.x += 1
-    end.y += 1
+
+  if (busOption !== undefined) {
+    switch(busOption) {
+      case "default":
+        break;
+      case "all":
+        if (x < 0 && y > -1) {
+          //wxsx
+          start.x -= 1
+          end.y += 1
+        } else if (x < 0 && y < 0) {
+          //wxnx
+          start.x -= 1
+          start.y -= 1
+        } else if (x > -1 && y < 0) {
+          //exnx
+          start.y -= 1
+          end.x += 1
+        } else {
+          //exsx
+          end.x += 1
+          end.y += 1
+        }
+        break;
+      case "none":
+        if (x < 0 && y > -1) {
+          //wxsx
+          end.x -= 1
+          start.y += 1
+        } else if (x < 0 && y < 0) {
+          //wxnx
+          end.x -= 1
+          end.y -= 1
+        } else if (x > -1 && y < 0) {
+          //exnx
+          end.y -= 1
+          start.x += 1
+        } else {
+          //exsx
+          start.x += 1
+          start.y += 1
+        }  
+        break;
+    }
   }
+
   return { start, end }
 }
 
@@ -662,7 +764,7 @@ function makeRespawnSector(roomInSector, openTime, decayTime) {
     decayTime = decayTime.getTime()
   }
 
-  let { start, end } = getSectorBoundsAllBus(roomInSector)
+  let { start, end } = getSectorBounds(roomInSector, "all")
 
   for (let x = start.x; x < end.x; x++) {
     for (let y = start.y; y < end.y; y++) {
@@ -747,17 +849,6 @@ function makeSolidRoom(x, y) {
   let data = window.terrain.find(r => r.x === x && r.y === y)
   if (data) Object.assign(data, obj)
   else window.terrain.push(obj)
-}
-
-function getSectorBounds(room) {
-  let [x, y] = utils.roomNameToXY(room)
-  if (x < 0) x -= 9
-  if (y < 0) y -= 9
-  let sx = x - (x % 10)
-  let sy = y - (y % 10)
-  let start = { x: sx, y: sy }
-  let end = { x: sx + 10, y: sy + 10 }
-  return { start, end }
 }
 
 async function generateSector(room) {
