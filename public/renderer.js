@@ -180,7 +180,7 @@ function logMapClick(room, x, y) {
   console.log(room, x, y)
 }
 
-function getRoomFromName(room) { return terrain.find(r => r.name === room) }
+function getRoomFromName(room) { return terrain.find(r => r.room === room) }
 
 function getRoomFromXY(x, y) { return terrain.find(r => r.x == x && r.y == y) }
 
@@ -203,7 +203,7 @@ function changeSectorStatus(roomNameInSector, status) {
 function editTerrain(room, x, y, type) {
   const map = ['plain', 'wall', 'swamp']
   type = map.indexOf(type)
-  const r = terrain.find(r => r.name === room)
+  const r = terrain.find(r => r.room === room)
   const ind = x + (y * 50)
   const part1 = r.terrain.slice(0, ind)
   const part2 = r.terrain.slice(ind + 1)
