@@ -5,6 +5,8 @@ self.q = self.Q
 
 addEventListener('message', msg => {
   if (msg.data && msg.data.action == 'generate') {
+    console.log(`${JSON.stringify(msg.data.twoSourcesChance)}`)
+    console.log(`${JSON.stringify(msg.data.wallChance)}`)
     self.terrainCache = msg.data.terrainCache
     let [x, y] = utils.roomNameToXY(msg.data.room)
     const [, lon, lat] = msg.data.room.match(/^[WE](\d+)[NS](\d+)$/)
@@ -19,7 +21,8 @@ addEventListener('message', msg => {
     const depositTypes = [C.RESOURCE_SILICON, C.RESOURCE_METAL, C.RESOURCE_BIOMASS, C.RESOURCE_MIST]
     let map = {
       normal: {
-        controller: true
+        controller: true,
+        sources: Math.random() > msg.data.twoSourcesChance ? 1 : 2
       },
       sk: {
         controller: false,
@@ -43,6 +46,7 @@ addEventListener('message', msg => {
     opts = map[type]
     opts.type = type
     opts.wallChance = msg.data.wallChance
+    console.log(`${msg.data.room}-${JSON.stringify(opts)}`)
     generateRoom(msg.data.room, opts).then(room => {
       if (sk || center) {
         let min = room.objects.find(o => o.type == 'mineral')

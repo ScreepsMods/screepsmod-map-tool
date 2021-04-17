@@ -442,7 +442,7 @@ function renderRoom(ctx, room) {
     }
     ctx.restore()
   })
-  if (mineral) {
+  if (mineral && showMinerals.checked) {
     if (!imageCache[mineral + scale]) {
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')
@@ -520,6 +520,7 @@ function gen(room) {
     terrainCache,
     opts,
     id,
+    twoSourcesChance:  parseInt(document.querySelector('[name=twoSourcesChance]').value) / 100,
     wallChance: parseInt(document.querySelector('[name=wallChance]').value) / 100
   })
   return new Promise((resolve, reject) => {
