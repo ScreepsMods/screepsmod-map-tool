@@ -270,7 +270,7 @@ function generateRoom (roomName, opts) {
         let [_x, _y] = utils.roomNameToXY(roomName)
         let hallx = !!roomName.match(/^[EW]\d*[NS]\d*0$/)
         let hally = !!roomName.match(/^[EW]\d*0[NS]\d*$/)        
-        let val = Math.random() > (wallChance || 0.3)
+        let val = Math.random() > (wallChance == undefined ?  0.3 : wallChance)
         val |= sk
         val |= (dir == 'bottom') && !!utils.roomNameFromXY(_x, _y + 1).match(/^[EW]\d*[4-6][NS]\d*[4-6]$/)
         val |= (dir == 'top') && !!utils.roomNameFromXY(_x, _y - 1).match(/^[EW]\d*[4-6][NS]\d*[4-6]$/)
