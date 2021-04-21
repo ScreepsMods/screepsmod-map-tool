@@ -5,8 +5,6 @@ self.q = self.Q
 
 addEventListener('message', msg => {
   if (msg.data && msg.data.action == 'generate') {
-    console.log(`${JSON.stringify(msg.data.twoSourcesChance)}`)
-    console.log(`${JSON.stringify(msg.data.wallChance)}`)
     self.terrainCache = msg.data.terrainCache
     let [x, y] = utils.roomNameToXY(msg.data.room)
     const [, lon, lat] = msg.data.room.match(/^[WE](\d+)[NS](\d+)$/)

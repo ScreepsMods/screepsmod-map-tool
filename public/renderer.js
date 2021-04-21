@@ -86,7 +86,7 @@ function previewTypes() {
   proc()
 }
 
-canvas.addEventListener('mousewheel', e => {
+canvas.addEventListener('wheel', e => {
   const oldScale = scale
   if (e.deltaY > 0 && scale > 1) scale--
   if (e.deltaY < 0 && scale < 8) scale++

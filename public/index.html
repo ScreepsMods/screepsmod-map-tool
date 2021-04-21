@@ -11,7 +11,7 @@
 		<script src="floodfill.min.js" defer></script>
 		<link rel="stylesheet" type="text/css" href="index.css">
 	</head>
-	<body>
+	<body onpageshow="refreshSlidersOnPageLoad()">
 		<canvas id="canvas"></canvas>
 		<div class="controlpanel">
 			<div>
@@ -30,13 +30,15 @@
 				<button onclick="fixAll()">Fix All Rooms</button>
 			</div>
 			<div>
-				<div>Walls Chance</div>
-				<input type="range" name="wallChance" value="25" min="0" max="100" step="1" oninput="this.title=this.value + '%'">
+				<div id="wallChance">Walls Chance</div>
+				<input id="wallChanceInput" type="range" name="wallChance" value="25" min="0" max="100" step="1" 
+				oninput="updateSliderText('wallChance', 'Walls Chance[' + this.value + '%]')">
 				
 			</div>
 			<div>
-				<div>2 Source chance</div>
-				<input type="range" name="twoSourcesChance" value="25" min="0" max="101" step="1" oninput="this.title=this.value + '%'">
+				<div id="sourceChance">2 Source chance</div>
+				<input id="sourceChanceInput" type="range" name="twoSourcesChance" value="75" min="0" max="100" step="1" 
+				oninput="updateSliderText('sourceChance', '2 Source chance[' + this.value + '%]')">
 			</div>
 			<div>
 			<label>

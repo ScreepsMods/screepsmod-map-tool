@@ -8,6 +8,17 @@ function getTerrain (room, remote) {
   return self.terrainCache[room] || null
 }
 
+function refreshSlidersOnPageLoad() {  
+  document.getElementById('wallChanceInput').value = 25;
+  document.getElementById('sourceChanceInput').value = 75;
+  document.getElementById('wallChance').innerHTML = 'Walls Chance[25%]';
+  document.getElementById('sourceChance').innerHTML = '2 Source chance[75%]';
+}
+
+function updateSliderText(id, newText) {
+    document.getElementById(id).innerHTML = newText;
+}
+
 async function getAllTerrain () {
   const res = await fetch(`${server}/api/maptool/rooms`, { credentials: 'same-origin' })
   const { rooms } = await res.json()
