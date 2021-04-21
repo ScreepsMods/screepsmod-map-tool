@@ -8,6 +8,17 @@ function getTerrain (room, remote) {
   return self.terrainCache[room] || null
 }
 
+function refreshSlidersOnPageLoad() {  
+  document.getElementById('wallChanceInput').value = 25;
+  document.getElementById('sourceChanceInput').value = 75;
+  document.getElementById('wallChance').innerHTML = 'Walls Chance[25%]';
+  document.getElementById('sourceChance').innerHTML = '2 Source chance[75%]';
+}
+
+function updateSliderText(id, newText) {
+    document.getElementById(id).innerHTML = newText;
+}
+
 async function getAllTerrain () {
   const res = await fetch(`${server}/api/maptool/rooms`, { credentials: 'same-origin' })
   const { rooms } = await res.json()
@@ -270,7 +281,7 @@ function generateRoom (roomName, opts) {
         let [_x, _y] = utils.roomNameToXY(roomName)
         let hallx = !!roomName.match(/^[EW]\d*[NS]\d*0$/)
         let hally = !!roomName.match(/^[EW]\d*0[NS]\d*$/)        
-        let val = Math.random() > (wallChance || 0.3)
+        let val = Math.random() > (wallChance == undefined ?  0.3 : wallChance)
         val |= sk
         val |= (dir == 'bottom') && !!utils.roomNameFromXY(_x, _y + 1).match(/^[EW]\d*[4-6][NS]\d*[4-6]$/)
         val |= (dir == 'top') && !!utils.roomNameFromXY(_x, _y - 1).match(/^[EW]\d*[4-6][NS]\d*[4-6]$/)

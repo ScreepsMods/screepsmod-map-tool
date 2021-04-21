@@ -11,29 +11,58 @@
 		<script src="floodfill.min.js" defer></script>
 		<link rel="stylesheet" type="text/css" href="index.css">
 	</head>
-	<body>
+	<body onpageshow="refreshSlidersOnPageLoad()">
 		<canvas id="canvas"></canvas>
 		<div class="controlpanel">
-			<button onclick="save(true)">Save</button>
-			<button onclick="generateSolidWall()">Generate Walls</button>
-			<button onclick="fixAll()">Fix All Rooms</button>
-			<input type="range" name="wallChance" value="25" min="0" max="100" step="10" oninput="this.title=this.value + '%'">
-			<label>
-				<input type="checkbox" id="showWalls">
-				Show Walls
-			</label>
-			<button onclick="autoGen(2,2)">Auto Gen (2x2)</button>
-			<button onclick="autoGen(4,2)">Auto Gen (4x2)</button>
-			<button onclick="autoGen(4,4)">Auto Gen (4x4)</button>
-			<label>
-				Mouse Tool
+			<div>
+				<div>Mouse Tool :</div>				
 				<select oninput="currentTool = this.value">
 					<option value="gen">Generate Rooms</option>
 					<option value="edit">Edit Room Terrain</option>
 					<option value="access">Open/Close Rooms</option>
 					<option selected value="block">No Tool Selected</option>					
 				</select>
+			<div>
+			<div>
+				<button onclick="generateSolidWall()">Generate Walls</button>
+			</div>
+			<div>
+				<button onclick="fixAll()">Fix All Rooms</button>
+			</div>
+			<div>
+				<div id="wallChance">Walls Chance</div>
+				<input id="wallChanceInput" type="range" name="wallChance" value="25" min="0" max="100" step="1" 
+				oninput="updateSliderText('wallChance', 'Walls Chance[' + this.value + '%]')">
+				
+			</div>
+			<div>
+				<div id="sourceChance">2 Source chance</div>
+				<input id="sourceChanceInput" type="range" name="twoSourcesChance" value="75" min="0" max="100" step="1" 
+				oninput="updateSliderText('sourceChance', '2 Source chance[' + this.value + '%]')">
+			</div>
+			<div>
+			<label>
+				<input type="checkbox" id="showWalls">
+				Show Walls
 			</label>
+			<label>
+				<input type="checkbox" id="showMinerals">
+				Show Minerals
+			</label>
+			<div>
+				<button onclick="generateSector('W5N5')">Gen Default</button>
+			</div>
+			<div>
+				<button onclick="autoGen(2,2)">Auto Gen (2x2)</button>
+			</div>
+			<div>
+				<button onclick="autoGen(4,2)">Auto Gen (4x2)</button>
+			</div>
+				<button onclick="autoGen(4,4)">Auto Gen (4x4)</button>
+			</div>
+				<button onclick="save(true)">Save</button>
+			</div>
+		</div>
 		</div>
 		<textarea id="output"></textarea>
 	</body>
