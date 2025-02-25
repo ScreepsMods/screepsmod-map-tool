@@ -163,6 +163,10 @@ const tools = {
     { key: 'middle', action: ({ room, x, y }) => editTerrain(room, x, y, 'swamp') },
     { key: 'right', action: ({ room, x, y }) => editTerrain(room, x, y, 'plain') }
   ],
+  mineral: [
+    { key: 'left', action: ({ room }) => cycleMineral(room) },
+    { key: 'right', action: ({ room }) => cycleMineral(room, false) },
+  ],
   access: [
     { key: 'left', action: ({ room }) => changeRoomStatus(getRoomFromName(room), 'normal') },
     { key: 'ctrl+left', action: ({ room }) => changeSectorStatus(room, 'normal') },
@@ -208,6 +212,16 @@ function editTerrain(room, x, y, type) {
   const part1 = r.terrain.slice(0, ind)
   const part2 = r.terrain.slice(ind + 1)
   r.terrain = terrainCache[room].terrain = part1 + type + part2
+  r.remote = false
+}
+
+function cycleMineral(room, forward=true) {
+  const minerals = ['H', 'O', 'Z', 'K', 'U', 'L', 'X'];
+  const r = terrain.find(r => r.room === room);
+  const mineral = r.objects.find(o => o.type === "mineral");
+  if (!mineral) return;
+  const idx = minerals.indexOf(mineral.mineralType);
+  mineral.mineralType = minerals.at(idx + (forward ? 1 : -1));
   r.remote = false
 }
 
