@@ -246,8 +246,8 @@ canvas.addEventListener('mouseup', e => {
     if (action) {
       action({
         room,
-        x: mp.rx,
-        y: mp.ry,
+        x: (mp.rx + 50) % 50,
+        y: (mp.ry + 50) % 50,
         e
       })
     }
@@ -376,13 +376,13 @@ function render() {
     ctx.save()
     ctx.translate(vp.x, vp.y)
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'
-    let [xo, yo] = [
-      Math.floor(Math.abs(vp.x % scale)),
-      Math.floor(Math.abs(vp.y % scale))
-    ]
 
-    let x = (mp.rx * scale) + (cell.x * scale) // (mp.x + xo)
-    let y = (mp.ry * scale) + (cell.y * scale) // (mp.y + yo)
+    let cellX = cell.x + (cell.x < 0 ? 1 : 0)
+    let cellY = cell.y + (cell.y < 0 ? 1 : 0)
+
+    let x = (mp.rx * scale) + (cellX * 50 * scale)
+    let y = (mp.ry * scale) + (cellY * 50 * scale)
+
     ctx.beginPath()
     ctx.rect(x, y, scale, scale)
     ctx.fill()
