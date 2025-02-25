@@ -150,7 +150,7 @@ const tools = {
     { key: 'left', action: ({ room }) => gen(room) },
     { key: 'ctrl+left', action: ({ room }) => generateSector(room) },
     {
-      key: 'middle',
+      key: 'alt+left',
       action: ({ e }) => {
         flood = flood ? false : { x: e.clientX, y: e.clientY }
       }
@@ -160,7 +160,7 @@ const tools = {
   ],
   edit: [
     { key: 'left', action: ({ room, x, y }) => editTerrain(room, x, y, 'wall') },
-    { key: 'middle', action: ({ room, x, y }) => editTerrain(room, x, y, 'swamp') },
+    { key: 'alt+left', action: ({ room, x, y }) => editTerrain(room, x, y, 'swamp') },
     { key: 'right', action: ({ room, x, y }) => editTerrain(room, x, y, 'plain') }
   ],
   mineral: [
@@ -175,7 +175,7 @@ const tools = {
   ],
   block: [
     { key: 'left', action: ({ room, x, y }) => logMapClick(room, x, y) },
-    { key: 'middle', action: ({ room, x, y }) => logMapClick(room, x, y) },
+    { key: 'alt+left', action: ({ room, x, y }) => logMapClick(room, x, y) },
     { key: 'right', action: ({ room, x, y }) => logMapClick(room, x, y) }
   ]
 }
