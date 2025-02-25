@@ -156,7 +156,9 @@ const tools = {
       }
     },
     { key: 'right',  action: ({ room }) => del(room) },
-    { key: 'ctrl+right', action: ({ room }) => deleteSector(room) }
+    { key: 'alt+right', action: ({ room }) => makeSolidRoom(room) },
+    { key: 'ctrl+right', action: ({ room }) => deleteSector(room) },
+    { key: 'alt+ctrl+right', action: ({ room }) => makeSolidSector(room) },
   ],
   edit: [
     { key: 'left', action: ({ room, x, y }) => editTerrain(room, x, y, 'wall') },
@@ -543,7 +545,6 @@ function gen(room) {
 }
 
 function del(room) {
-  if (!roomsToBrick.includes(room)) roomsToBrick.push(room)
   terrainCache[room] = null
   let ind = terrain.findIndex(r => r.room === room)
   if (~ind) terrain.splice(ind, 1)
@@ -583,18 +584,10 @@ for (let i = 0; i < pool.count; i++) {
 
 function save(active) {
   if (!confirm('Are you sure you want to save?')) return
-  if (roomsToBrick.length > 0) {
-    for (var room of roomsToBrick) {
-      const idx = terrain.findIndex(r => r.room === room)
-      if (idx === -1) {
-        const [x, y] = utils.roomNameToXY(room)
-        // console.log('makeSolidRoom ', room, x, y)
-        makeSolidRoom(x, y)        
-      }
-    }
-  }
   terrain.forEach(r => r.status = r.status || (active ? 'normal' : 'out of borders'))
-  let json = JSON.stringify(terrain.filter(r => !r.remote))
+  const clean = terrain.filter(r => r.remote).map(r => r.name)
+  const rooms = terrain.filter(r => !r.remote)
+  let json = JSON.stringify({ rooms, clean })
   fetch(`${server}/api/maptool/set`, {
     method: 'POST',
     body: json,
@@ -838,7 +831,7 @@ function generateSolidWall() {
     for (let y = start.y - 1; y <= end.y + 1; y++) {
       let room = terrain.find(r => r.x === x && r.y === y)
       if (!room) {
-        makeSolidRoom(x, y)
+        makeSolidRoom(utils.roomNameFromXY(x, y))
       }
     }
   }
@@ -855,8 +848,8 @@ function generateSolidWall() {
   // }
 }
 
-function makeSolidRoom(x, y) {
-  let room = utils.roomNameFromXY(x, y)
+function makeSolidRoom(room) {
+  let [x, y] = utils.roomNameToXY(room)
   let terrain = '1'.repeat(2500)
   let objects = []
   let status = 'out of borders'
@@ -895,13 +888,20 @@ async function generateSector(room) {
   await Promise.all(p2.map(room => gen(room)))
 }
 
-function deleteSector(room) {
-  let p1 = []
-  let p2 = []
+function makeSolidSector(room) {
   let { start, end } = getSectorBounds(room)
   for (let x = start.x; x < end.x; x++) {
     for (let y = start.y; y < end.y; y++) {
-      makeSolidRoom(x, y)
+      makeSolidRoom(utils.roomNameFromXY(x, y))
+    }
+  }
+}
+
+function deleteSector(room) {
+  let { start, end } = getSectorBounds(room)
+  for (let x = start.x; x < end.x; x++) {
+    for (let y = start.y; y < end.y; y++) {
+      del(utils.roomNameFromXY(x, y))
     }
   }
 }
