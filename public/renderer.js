@@ -416,20 +416,23 @@ function renderRoom(ctx, room) {
     ctx.fillRect(rx, ry, 50 * scale, 50 * scale)
     ctx.restore()
   }
-  if (showWalls.checked && room.exits) {
+  if (showWalls.checked) {
+    const exits = getExits(room.room);
     ctx.save()
     ctx.beginPath()
     let x2 = rx + (50 * scale)
     let y2 = ry + (50 * scale)
     ctx.moveTo(rx, ry)
-    ctx[room.exits.top ? 'moveTo' : 'lineTo'](x2, ry)
-    ctx[room.exits.right ? 'moveTo' : 'lineTo'](x2, y2)
-    ctx[room.exits.bottom ? 'moveTo' : 'lineTo'](rx, y2)
-    ctx[room.exits.left ? 'moveTo' : 'lineTo'](rx, ry)
+    const hasExit = (data) => {
+      return typeof data === "boolean" && data || typeof data === "string" && data.split("").some(c => c === "0")
+    }
+    ctx[hasExit(exits.top) ? 'moveTo' : 'lineTo'](x2, ry)
+    ctx[hasExit(exits.right) ? 'moveTo' : 'lineTo'](x2, y2)
+    ctx[hasExit(exits.bottom) ? 'moveTo' : 'lineTo'](rx, y2)
+    ctx[hasExit(exits.left) ? 'moveTo' : 'lineTo'](rx, ry)
     ctx.strokeStyle = 'red'
     ctx.stroke()
     ctx.restore()
-    return
   }
   let mineral = ''
   let colors = {
