@@ -1132,3 +1132,29 @@ async function fixAll() {
   console.log(`All rooms fixed. Run save to apply.`)
   alert(`All rooms fixed. Run save to apply.`)
 }
+
+function getStats(sectorRoom) {
+  const stats = {
+    sources: 0,
+    doubleSource: 0,
+    minerals: { H: 0, O: 0, Z: 0, K: 0, U: 0, L: 0, X: 0, },
+  }
+  const coords = getSectorBounds(sectorRoom, "none")
+  for (let x = coords.start.x; x < coords.end.x; x++) {
+    for (let y = coords.start.y; y < coords.end.y; y++) {
+      const name = utils.roomNameFromXY(x, y)
+      const room = terrain.find(r => r.name === name)
+      if (!room) continue;
+      const sources = room.objects.filter(o => o.type === "source")
+      stats.sources += sources.length ?? 0
+      if (sources.length > 1) {
+        stats.doubleSource += 1
+      }
+      const mineral = room.objects.find(o => o.type === "mineral")
+      stats.minerals[mineral.mineralType] ??= 0
+      stats.minerals[mineral.mineralType]++
+    }
+  }
+  console.log(`sources: ${stats.sources}, double: ${stats.doubleSource}, mineral: ${Object.entries(stats.minerals).map(([m, n]) => `${n} of ${m}`).join(", ")}`)
+  return stats
+}
