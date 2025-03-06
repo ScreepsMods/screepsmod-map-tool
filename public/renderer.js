@@ -150,18 +150,24 @@ const tools = {
     { key: 'left', action: ({ room }) => gen(room) },
     { key: 'ctrl+left', action: ({ room }) => generateSector(room) },
     {
-      key: 'middle',
+      key: 'alt+left',
       action: ({ e }) => {
         flood = flood ? false : { x: e.clientX, y: e.clientY }
       }
     },
     { key: 'right',  action: ({ room }) => del(room) },
-    { key: 'ctrl+right', action: ({ room }) => deleteSector(room) }
+    { key: 'alt+right', action: ({ room }) => makeSolidRoom(room) },
+    { key: 'ctrl+right', action: ({ room }) => deleteSector(room) },
+    { key: 'alt+ctrl+right', action: ({ room }) => makeSolidSector(room) },
   ],
   edit: [
     { key: 'left', action: ({ room, x, y }) => editTerrain(room, x, y, 'wall') },
-    { key: 'middle', action: ({ room, x, y }) => editTerrain(room, x, y, 'swamp') },
+    { key: 'alt+left', action: ({ room, x, y }) => editTerrain(room, x, y, 'swamp') },
     { key: 'right', action: ({ room, x, y }) => editTerrain(room, x, y, 'plain') }
+  ],
+  mineral: [
+    { key: 'left', action: ({ room }) => cycleMineral(room) },
+    { key: 'right', action: ({ room }) => cycleMineral(room, false) },
   ],
   access: [
     { key: 'left', action: ({ room }) => changeRoomStatus(getRoomFromName(room), 'normal') },
@@ -171,7 +177,7 @@ const tools = {
   ],
   block: [
     { key: 'left', action: ({ room, x, y }) => logMapClick(room, x, y) },
-    { key: 'middle', action: ({ room, x, y }) => logMapClick(room, x, y) },
+    { key: 'alt+left', action: ({ room, x, y }) => logMapClick(room, x, y) },
     { key: 'right', action: ({ room, x, y }) => logMapClick(room, x, y) }
   ]
 }
@@ -211,6 +217,16 @@ function editTerrain(room, x, y, type) {
   r.remote = false
 }
 
+function cycleMineral(room, forward=true) {
+  const minerals = ['H', 'O', 'Z', 'K', 'U', 'L', 'X'];
+  const r = terrain.find(r => r.room === room);
+  const mineral = r.objects.find(o => o.type === "mineral");
+  if (!mineral) return;
+  const idx = minerals.indexOf(mineral.mineralType);
+  mineral.mineralType = minerals.at(idx + (forward ? 1 : -1));
+  r.remote = false
+}
+
 canvas.addEventListener('mouseup', e => {
   let room = utils.roomNameFromXY(cell.x, cell.y)
   let btns = ['left', 'middle', 'right']
@@ -232,8 +248,8 @@ canvas.addEventListener('mouseup', e => {
     if (action) {
       action({
         room,
-        x: mp.rx,
-        y: mp.ry,
+        x: (mp.rx + 50) % 50,
+        y: (mp.ry + 50) % 50,
         e
       })
     }
@@ -362,13 +378,13 @@ function render() {
     ctx.save()
     ctx.translate(vp.x, vp.y)
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'
-    let [xo, yo] = [
-      Math.floor(Math.abs(vp.x % scale)),
-      Math.floor(Math.abs(vp.y % scale))
-    ]
 
-    let x = (mp.rx * scale) + (cell.x * scale) // (mp.x + xo)
-    let y = (mp.ry * scale) + (cell.y * scale) // (mp.y + yo)
+    let cellX = cell.x + (cell.x < 0 ? 1 : 0)
+    let cellY = cell.y + (cell.y < 0 ? 1 : 0)
+
+    let x = (mp.rx * scale) + (cellX * 50 * scale)
+    let y = (mp.ry * scale) + (cellY * 50 * scale)
+
     ctx.beginPath()
     ctx.rect(x, y, scale, scale)
     ctx.fill()
@@ -400,20 +416,23 @@ function renderRoom(ctx, room) {
     ctx.fillRect(rx, ry, 50 * scale, 50 * scale)
     ctx.restore()
   }
-  if (showWalls.checked && room.exits) {
+  if (showWalls.checked) {
+    const exits = getExits(room.room);
     ctx.save()
     ctx.beginPath()
     let x2 = rx + (50 * scale)
     let y2 = ry + (50 * scale)
     ctx.moveTo(rx, ry)
-    ctx[room.exits.top ? 'moveTo' : 'lineTo'](x2, ry)
-    ctx[room.exits.right ? 'moveTo' : 'lineTo'](x2, y2)
-    ctx[room.exits.bottom ? 'moveTo' : 'lineTo'](rx, y2)
-    ctx[room.exits.left ? 'moveTo' : 'lineTo'](rx, ry)
+    const hasExit = (data) => {
+      return typeof data === "boolean" && data || typeof data === "string" && data.split("").some(c => c === "0")
+    }
+    ctx[hasExit(exits.top) ? 'moveTo' : 'lineTo'](x2, ry)
+    ctx[hasExit(exits.right) ? 'moveTo' : 'lineTo'](x2, y2)
+    ctx[hasExit(exits.bottom) ? 'moveTo' : 'lineTo'](rx, y2)
+    ctx[hasExit(exits.left) ? 'moveTo' : 'lineTo'](rx, ry)
     ctx.strokeStyle = 'red'
     ctx.stroke()
     ctx.restore()
-    return
   }
   let mineral = ''
   let colors = {
@@ -529,7 +548,6 @@ function gen(room) {
 }
 
 function del(room) {
-  if (!roomsToBrick.includes(room)) roomsToBrick.push(room)
   terrainCache[room] = null
   let ind = terrain.findIndex(r => r.room === room)
   if (~ind) terrain.splice(ind, 1)
@@ -569,18 +587,10 @@ for (let i = 0; i < pool.count; i++) {
 
 function save(active) {
   if (!confirm('Are you sure you want to save?')) return
-  if (roomsToBrick.length > 0) {
-    for (var room of roomsToBrick) {
-      const idx = terrain.findIndex(r => r.room === room)
-      if (idx === -1) {
-        const [x, y] = utils.roomNameToXY(room)
-        // console.log('makeSolidRoom ', room, x, y)
-        makeSolidRoom(x, y)        
-      }
-    }
-  }
   terrain.forEach(r => r.status = r.status || (active ? 'normal' : 'out of borders'))
-  let json = JSON.stringify(terrain.filter(r => !r.remote))
+  const clean = terrain.filter(r => r.remote).map(r => r.name)
+  const rooms = terrain.filter(r => !r.remote)
+  let json = JSON.stringify({ rooms, clean })
   fetch(`${server}/api/maptool/set`, {
     method: 'POST',
     body: json,
@@ -824,7 +834,7 @@ function generateSolidWall() {
     for (let y = start.y - 1; y <= end.y + 1; y++) {
       let room = terrain.find(r => r.x === x && r.y === y)
       if (!room) {
-        makeSolidRoom(x, y)
+        makeSolidRoom(utils.roomNameFromXY(x, y))
       }
     }
   }
@@ -841,8 +851,8 @@ function generateSolidWall() {
   // }
 }
 
-function makeSolidRoom(x, y) {
-  let room = utils.roomNameFromXY(x, y)
+function makeSolidRoom(room) {
+  let [x, y] = utils.roomNameToXY(room)
   let terrain = '1'.repeat(2500)
   let objects = []
   let status = 'out of borders'
@@ -881,13 +891,20 @@ async function generateSector(room) {
   await Promise.all(p2.map(room => gen(room)))
 }
 
-function deleteSector(room) {
-  let p1 = []
-  let p2 = []
+function makeSolidSector(room) {
   let { start, end } = getSectorBounds(room)
   for (let x = start.x; x < end.x; x++) {
     for (let y = start.y; y < end.y; y++) {
-      makeSolidRoom(x, y)
+      makeSolidRoom(utils.roomNameFromXY(x, y))
+    }
+  }
+}
+
+function deleteSector(room) {
+  let { start, end } = getSectorBounds(room)
+  for (let x = start.x; x < end.x; x++) {
+    for (let y = start.y; y < end.y; y++) {
+      del(utils.roomNameFromXY(x, y))
     }
   }
 }
@@ -1114,4 +1131,30 @@ async function fixAll() {
   await fixExits()
   console.log(`All rooms fixed. Run save to apply.`)
   alert(`All rooms fixed. Run save to apply.`)
+}
+
+function getStats(sectorRoom) {
+  const stats = {
+    sources: 0,
+    doubleSource: 0,
+    minerals: { H: 0, O: 0, Z: 0, K: 0, U: 0, L: 0, X: 0, },
+  }
+  const coords = getSectorBounds(sectorRoom, "none")
+  for (let x = coords.start.x; x < coords.end.x; x++) {
+    for (let y = coords.start.y; y < coords.end.y; y++) {
+      const name = utils.roomNameFromXY(x, y)
+      const room = terrain.find(r => r.name === name)
+      if (!room) continue;
+      const sources = room.objects.filter(o => o.type === "source")
+      stats.sources += sources.length ?? 0
+      if (sources.length > 1) {
+        stats.doubleSource += 1
+      }
+      const mineral = room.objects.find(o => o.type === "mineral")
+      stats.minerals[mineral.mineralType] ??= 0
+      stats.minerals[mineral.mineralType]++
+    }
+  }
+  console.log(`sources: ${stats.sources}, double: ${stats.doubleSource}, mineral: ${Object.entries(stats.minerals).map(([m, n]) => `${n} of ${m}`).join(", ")}`)
+  return stats
 }

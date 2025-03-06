@@ -15,16 +15,17 @@ If you have a config.yml you can avoid using `.screepsrc` by setting the env var
 
 Left click to generate a room
 
-Right click to remove a room (fills with solid room)*
-
 Ctrl+Left Click to generate a sector
 
-Ctrl+Right Click to remove a sector (fills with solid rooms)*
+Right click to remove a room
 
-Middle clicking will flood fill from the cursor's position, 
-this is useful to find isolated rooms
+Alt+Right Click to brick a room
 
-*If a room is removed but not regenerated it will be completely walled off with game objects removed. This is done because map tool can not completely remove a room as this must be done in the CLI with the `map.removeRoom` command.
+Ctrl+Right Click to remove a sector
+
+Alt+Ctrl+Right Click to brick a whole sector
+
+Alt+Left Click will flood fill from the cursor's position, this is useful to find isolated rooms
 
 ### Edit Room Terrain
 
@@ -32,7 +33,7 @@ Left click sets tile to wall
 
 Right click sets tile to plain
 
-Middle click sets tile to swamp
+Alt+Left click sets tile to swamp
 
 ### Open/Close Rooms
 

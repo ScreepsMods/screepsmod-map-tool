@@ -1,7 +1,5 @@
 self.terrainCache = {}
 
-self.roomsToBrick = []
-
 const server = ``
 const wallChance = 0.25
 function getTerrain (room, remote) {
