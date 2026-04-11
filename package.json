@@ -3,6 +3,9 @@
   "version": "1.11.0",
   "description": "",
   "main": "index.js",
+  "repository": {
+    "url": "https://github.com/ScreepsMods/screepsmod-map-tool"
+  },
   "scripts": {
     "test": "npx standard lib/**/*.js",
     "2npm": "publish"
